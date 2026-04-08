@@ -123,7 +123,7 @@ tmux new -s claude
 Inside tmux:
 
 ```bash
-claude
+ 
 ```
 
 Detach without killing the session: `Ctrl-b` then `d`.
