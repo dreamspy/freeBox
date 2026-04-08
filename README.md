@@ -13,18 +13,23 @@ Setup and maintenance for **freeBox**, a Linode Ubuntu 24.04 VPS used as a remot
 
 ```
 freeBox/
-├── README.md           ← this file (human overview)
-├── CLAUDE.md           ← Claude Code project instructions
+├── README.md              ← this file (human overview)
+├── CLAUDE.md              ← Claude Code project instructions
+├── TODO.md                ← persistent server-setup checklist
 ├── .gitignore
 ├── 10_docs/
-│   └── setup.md        ← end-to-end runbook for the server
+│   ├── setup.md           ← end-to-end runbook for the server
+│   └── obsidian-sync.md   ← comparison of vault-sync options (undecided)
 ├── 20_scripts/
-│   ├── bootstrap.sh    ← idempotent first-time provisioning
-│   └── check-health.sh ← quick health snapshot
-└── files from chatGPT/ ← original ChatGPT proposals, kept as source of truth
+│   ├── bootstrap.sh       ← idempotent first-time provisioning
+│   └── check-health.sh    ← quick health snapshot
+└── 00_inbox/              ← local-only scratch area (gitignored)
+    └── files from chatGPT/  ← original ChatGPT proposals, kept as reference
 ```
 
-Numbered prefixes sort folders and files in reading order. The three exceptions (`README.md`, `CLAUDE.md`, `.gitignore`) keep their conventional names so tool integrations (Claude Code auto-load, GitHub README rendering, git) keep working.
+Numbered prefixes sort folders in reading order. The unprefixed root files (`README.md`, `CLAUDE.md`, `TODO.md`, `.gitignore`) keep their conventional names so tool integrations (Claude Code auto-load, GitHub README rendering, git) keep working.
+
+> **This repository is public.** Sensitive values (server IPs, usernames, keys) live in `SECRETS.md`, which is gitignored and never committed. See `CLAUDE.md` for the full rule.
 
 ## Quick start
 
