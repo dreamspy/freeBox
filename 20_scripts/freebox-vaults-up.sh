@@ -136,7 +136,7 @@ for vault_dir in "${vault_dirs[@]}"; do
 
   log "starting tmux session $session in $vault_dir (remote: $remote_name)"
   tmux new-session -d -s "$session" -c "$vault_dir" \
-    "claude remote-control --name \"$remote_name\""
+    "claude remote-control --spawn=same-dir --name \"$remote_name\""
   new_sessions=$((new_sessions + 1))
 done
 
