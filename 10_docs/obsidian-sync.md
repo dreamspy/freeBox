@@ -1,6 +1,16 @@
 # Obsidian sync options for freeBox
 
-How to share Obsidian vaults between freeBox, Mac, and iPhone so Claude on the server can edit them. **Status: undecided.** This document compares the realistic options and ends with a recommendation.
+How to share Obsidian vaults between freeBox, Mac, and iPhone so Claude on the server can edit them.
+
+> **Status: decided, 2026-04-09 — Syncthing-based (Option A variant).**
+>
+> Vaults **do live on freeBox**, in `~/Vaults/`, and are kept in sync with the Mac (and any other peer) via **Syncthing**. The Vaults folder is shared as `sendreceive` between Mac and freeBox over Tailscale; Syncthing's own discovery handles the connection (port `22000`, GUI on `127.0.0.1:8384`). This supersedes the earlier 2026-04-08 "vaults off freeBox" decision.
+>
+> **Why the reversal:** keeping vaults on freeBox is a hard requirement so Claude on the server can read and edit them directly without going through Remote Control round-trips, and so vault content is available on a host that's reachable independently of the Mac.
+>
+> **`.stignore` gotcha (learned the hard way):** Syncthing will refuse to delete a directory on a peer if that directory still contains files matched by `.stignore` — pull errors look like `delete dir: directory has been deleted on a remote device but contains ignored files (see ignore documentation for (?d) prefix)`. Any volatile/local-only pattern that can legitimately be left behind in a directory you might later delete (Obsidian's `.obsidian/workspace*`, `.obsidian/cache`, macOS's `.DS_Store`/`._*`, etc.) **must** be prefixed with `(?d)` so Syncthing is allowed to remove it on delete. Conflict files (`.sync-conflict-*`) already use `(?d)`; everything else volatile should too. If you see "needDeletes > 0" stuck on a peer, this is almost always why — check `~/Vaults/.stignore` on the peer that's stuck.
+>
+> The full comparison below is preserved as background — it's the research that fed both the original (Option G) and the current (Syncthing) decisions.
 
 ## Constraints to know first
 
