@@ -27,6 +27,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 VAULTS_DIR = "/home/frimann/Vaults"
 SB_SWITCH = "/home/frimann/bin/sb-switch"
+VAULTS_UP = "/home/frimann/freeBox/20_scripts/freebox-vaults-up.sh"
 SB_URL = "https://freebox.tail3eed93.ts.net/"
 HOST = "127.0.0.1"
 PORT = 3001
@@ -111,6 +112,8 @@ button.vault:active{background:#333;transform:scale(.99)}
 a.open-sb{display:block;text-align:center;padding:1.1rem;background:#2d4d8a;color:#fff;text-decoration:none;border-radius:10px;margin-bottom:1.5rem;font-weight:600;font-size:1.05rem;-webkit-tap-highlight-color:transparent}
 a.open-sb:active{background:#3a5a9a}
 hr{border:none;border-top:1px solid #2a2a2a;margin:1.5rem 0}
+button.action{display:block;width:100%;text-align:center;padding:1rem 1.25rem;margin:.6rem 0;font-size:.95rem;background:#2a2a2a;color:#999;border:1px solid #3a3a3a;border-radius:10px;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent}
+button.action:active{background:#333;color:#ccc;transform:scale(.99)}
 </style>""")
     parts.append("</head><body>")
     parts.append("<h1>📚 freeBox SB vaults</h1>")
@@ -136,6 +139,11 @@ hr{border:none;border-top:1px solid #2a2a2a;margin:1.5rem 0}
         parts.append(f"<input type=hidden name=vault value='{v_esc}'>")
         parts.append(f"<button class=vault type=submit>{v_esc}</button>")
         parts.append("</form>")
+
+    parts.append("<hr>")
+    parts.append("<form method=post action='/launcher/restart-claude'>")
+    parts.append("<button class=action type=submit>🔄 Restart Claude sessions</button>")
+    parts.append("</form>")
 
     parts.append("</body></html>")
     return "".join(parts).encode("utf-8")
@@ -164,6 +172,45 @@ def switch_vault(vault):
         return False, f"sb-switch failed: <pre>{html_escape(err)}</pre>"
 
     return True, f"Switched to <strong>{html_escape(vault)}</strong>. SilverBullet is restarting (5–10s)."
+
+
+def restart_claude_sessions():
+    """Kill all vault-* tmux sessions, then re-run freebox-vaults-up.sh to
+    recreate them. Returns (ok, message)."""
+    # Kill existing vault-* sessions so freebox-vaults-up.sh recreates them
+    try:
+        ls_result = subprocess.run(
+            ["tmux", "ls", "-F", "#{session_name}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if ls_result.returncode == 0:
+            for line in ls_result.stdout.strip().splitlines():
+                if line.startswith("vault-"):
+                    subprocess.run(
+                        ["tmux", "kill-session", "-t", line],
+                        capture_output=True, timeout=5,
+                    )
+    except Exception:
+        pass  # No sessions to kill, or tmux not running — fine either way
+
+    try:
+        result = subprocess.run(
+            ["bash", VAULTS_UP],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return False, "Timed out restarting Claude sessions (&gt;60s)"
+    except Exception as e:
+        return False, f"Error: {html_escape(str(e))}"
+
+    if result.returncode != 0:
+        err = (result.stderr or result.stdout or "unknown error").strip()
+        return False, f"Restart failed: <pre>{html_escape(err)}</pre>"
+
+    output = (result.stdout or "").strip()
+    return True, f"Claude sessions restarted.<br><pre>{html_escape(output)}</pre>"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -198,6 +245,9 @@ class Handler(BaseHTTPRequestHandler):
             vault = params.get("vault", [""])[0]
             ok, message = switch_vault(vault)
             self._send(200 if ok else 500, render_html(message, success=ok))
+        elif path in ("/restart-claude", "/launcher/restart-claude"):
+            ok, message = restart_claude_sessions()
+            self._send(200 if ok else 500, render_html(message, success=False))
         else:
             self._send(404, b"not found", "text/plain")
 
