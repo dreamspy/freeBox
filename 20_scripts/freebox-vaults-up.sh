@@ -19,6 +19,12 @@ set -euo pipefail
 
 VAULTS_DIR="${VAULTS_DIR:-$HOME/Vaults}"
 
+# Non-interactive ssh and systemd units do not source ~/.profile or ~/.bashrc,
+# so $HOME/.local/bin (where the Claude installer puts the `claude` symlink) is
+# not on PATH by default. Prepend the usual local install dirs so this script
+# works regardless of how it's invoked.
+export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 log() {
   printf '[freebox-vaults-up] %s\n' "$1"
 }
