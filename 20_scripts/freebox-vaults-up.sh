@@ -60,19 +60,63 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+  log "ERROR: python3 not found; needed to update ~/.claude.json trust entries."
+  exit 1
+fi
+
 if [[ ! -d "$VAULTS_DIR" ]]; then
   log "ERROR: vaults directory $VAULTS_DIR does not exist"
   exit 1
 fi
 
-# --- 2. Start one tmux session per vault ---------------------------------
+# --- 2. Collect vault dirs ----------------------------------------------
 log "scanning $VAULTS_DIR for vaults"
 
 shopt -s nullglob
+vault_dirs=()
+for vault_dir in "$VAULTS_DIR"/*/; do
+  vault_dirs+=("${vault_dir%/}")
+done
+
+if [[ "${#vault_dirs[@]}" -eq 0 ]]; then
+  log "WARNING: no vault subdirectories found under $VAULTS_DIR"
+  log "done"
+  exit 0
+fi
+
+# --- 3. Pre-trust each vault dir in ~/.claude.json ----------------------
+# `claude remote-control` refuses to start in an untrusted workspace and exits
+# immediately, which kills the wrapping tmux session. Pre-populate the trust
+# state in ~/.claude.json so each vault is already trusted before we launch.
+log "pre-trusting ${#vault_dirs[@]} vault dirs in ~/.claude.json"
+python3 - "${vault_dirs[@]}" <<'PYEOF'
+import json, os, sys
+p = os.path.expanduser("~/.claude.json")
+try:
+    with open(p) as f:
+        d = json.load(f)
+except FileNotFoundError:
+    d = {}
+projects = d.setdefault("projects", {})
+added = 0
+for key in sys.argv[1:]:
+    entry = projects.setdefault(key, {})
+    if not entry.get("hasTrustDialogAccepted"):
+        entry["hasTrustDialogAccepted"] = True
+        added += 1
+tmp = p + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(d, f, indent=2)
+os.replace(tmp, p)
+print(f"[freebox-vaults-up]   trust entries added: {added}/{len(sys.argv)-1}")
+PYEOF
+
+# --- 4. Start one tmux session per vault --------------------------------
 vault_count=0
 new_sessions=0
 
-for vault_dir in "$VAULTS_DIR"/*/; do
+for vault_dir in "${vault_dirs[@]}"; do
   vault_count=$((vault_count + 1))
   raw_name="$(basename "$vault_dir")"
   safe_name="$(sanitize "$raw_name")"
@@ -95,10 +139,6 @@ for vault_dir in "$VAULTS_DIR"/*/; do
     "claude remote-control --name \"$remote_name\""
   new_sessions=$((new_sessions + 1))
 done
-
-if [[ "$vault_count" -eq 0 ]]; then
-  log "WARNING: no vault subdirectories found under $VAULTS_DIR"
-fi
 
 log "tmux sessions: $vault_count vaults total, $new_sessions newly started"
 tmux ls 2>/dev/null || true
