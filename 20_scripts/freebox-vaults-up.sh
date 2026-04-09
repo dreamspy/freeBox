@@ -30,10 +30,18 @@ log() {
 }
 
 # Sanitize a vault name into something safe for tmux session names and the
-# Claude Code Remote Control --name flag: lowercase, collapse non-alphanumeric
-# runs to a single underscore, strip leading/trailing underscores.
+# Claude Code Remote Control --name flag: transliterate Unicode to ASCII
+# (Björn -> Bjorn) using GNU iconv, lowercase, collapse non-alphanumeric runs
+# to a single underscore, strip leading/trailing underscores.
 sanitize() {
-  local s="${1,,}"
+  local s="$1"
+  if command -v iconv >/dev/null 2>&1; then
+    local t
+    if t="$(printf '%s' "$s" | iconv -f UTF-8 -t ASCII//TRANSLIT 2>/dev/null)"; then
+      s="$t"
+    fi
+  fi
+  s="${s,,}"
   s="${s//[^a-z0-9]/_}"
   while [[ "$s" == *__* ]]; do s="${s//__/_}"; done
   s="${s#_}"
