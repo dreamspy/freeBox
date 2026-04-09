@@ -1,8 +1,26 @@
 # Mac always-on workstation runbook
 
-End-to-end provisioning for a MacBook Pro (M1, fresh macOS install) being used as a 24/7 workstation that runs Claude Code sessions for multiple Obsidian vaults, accessible from the iPhone via Claude Code Remote Control and Tailscale.
+End-to-end provisioning for **freeMac**, a MacBook Pro (M1, fresh macOS install) used as a 24/7 always-on workstation. It runs per-vault Claude Code Remote Control sessions in tmux, Obsidian Sync (bridge to freePhone when atom is off), and Syncthing (peer mesh with freeBox and atom).
 
-**Current decision (2026-04-09, provisional):** the Mac is being tested in this role for a few weeks before deciding whether it permanently replaces freeBox for this workload. While this experiment runs, freeBox stays up but unused for vault work.
+## Machines
+
+| Name          | Role                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **freePhone** | iPhone; edits via Obsidian, SilverBullet PWA, Claude Remote Control                                                |
+| **freeBox**   | Linode VPS; runs SilverBullet, Syncthing to atom and freeMac                                                       |
+| **atom**      | Day-to-day MacBook; Obsidian, Claude CLI, Claude Desktop remote, Syncthing + Obsidian Sync                         |
+| **freeMac**   | Always-on Mac "server"; Obsidian Sync (bridge to freePhone when atom is off), Syncthing, Claude CLI remote in tmux |
+
+## Sync topology
+
+```
+freeBox ⇄ Syncthing ⇄ freeMac ⇄ Obsidian Sync ⇄ freePhone
+    ↑        ⇅                     Obsidian Sync ⇄ atom
+    ↑    Syncthing ⇄ atom
+SilverBullet (freePhone PWA)
+```
+
+Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync. freeMac is the always-on bridge; atom syncs when awake.
 
 ---
 
@@ -12,12 +30,15 @@ End-to-end provisioning for a MacBook Pro (M1, fresh macOS install) being used a
 - **OS:** fresh install of macOS
 - **FileVault:** **ON** — accepted tradeoff is one manual password entry after every actual reboot. Everything else (sessions, Obsidian, Tailscale) auto-starts after the FileVault unlock and the auto-login that follows it
 - **Lid:** start with the lid open on a desk; transition to lid-closed later with Amphetamine when needed (covered in §1.2)
-- **Vaults:** all live in `~/vaults/<vault-name>/`, all bidirectionally synced via the existing **Obsidian Sync** subscription
-- **Sessions:** one tmux session per vault, named `vault-<name>`, each running `claude` in the vault's directory
+- **Vaults:** all live in `~/Vaults/<vault-name>/`, synced via **Obsidian Sync** (to freePhone and atom) and **Syncthing** (to freeBox and atom)
+- **Sessions:** one tmux session per vault, named `freemac-<sanitized-vault-name>`, each running `claude remote-control --name "freemac-<name>"`
 - **Phone access:** Claude Code Remote Control for the Claude sessions (tunnels through Anthropic, no VPN required); Tailscale on the Mac for everything else (SSH, future web services, Files)
-- **Repo location on the Mac:** `~/Vaults/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `REPO_DIR` if you keep it elsewhere
+- **Repo location on the Mac:** `~/Vaults/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `VAULTS_DIR` env var if you keep vaults elsewhere
+- **Helper scripts:** `20_scripts/mac-workstation-up.sh` (Claude tmux + Obsidian), `20_scripts/mac-obsidian-up.sh` (Obsidian-only, lighter option)
 
 > **About FileVault:** macOS does not allow auto-login when FileVault is on. After any actual reboot or power failure, the Mac comes back to the FileVault unlock screen and waits for you to physically type your account password. Once you type it, the user auto-logs in and the LaunchAgent installed in §4 fires and brings everything else back. A small UPS (~$40) eliminates the most common cause of unattended reboots and is the right lever to pull rather than disabling FileVault. See `10_docs/obsidian-sync.md` and the project memory for the broader notes-workflow context.
+
+> **Adding a new vault:** Obsidian Sync has no "sync all" — each new remote vault must be manually pulled on freeMac via the Obsidian GUI (vault picker → "Show vaults stored in Obsidian Sync" → set path to `~/Vaults/<name>`). This is the one unavoidable manual step. Syncthing will pick up the new folder automatically once it exists.
 
 ---
 
@@ -61,7 +82,7 @@ Apple Silicon's *Optimized Battery Charging* parks the battery near 80% most of 
 brew install --cask tailscale
 ```
 
-Sign in via the menu bar icon to the same tailnet as freeBox and the iPhone. Verify:
+Sign in via the menu bar icon to the same tailnet as freeBox, atom, and freePhone. Verify:
 
 ```bash
 /Applications/Tailscale.app/Contents/MacOS/Tailscale ip -4
@@ -72,7 +93,7 @@ Sign in via the menu bar icon to the same tailnet as freeBox and the iPhone. Ver
 ### 1.5 Verify Phase 1
 
 - `pmset -g` shows the values from §1.1
-- The Mac's tailnet IPv4 is reachable from the iPhone (`tailscale ping <mac>` from another tailnet device, or just SSH/HTTP-test)
+- freeMac's tailnet IPv4 is reachable from freePhone (`tailscale ping freemac` from another tailnet device, or just SSH/HTTP-test)
 - After 30 minutes idle: the display sleeps but the system stays up and reachable
 - `uptime` keeps growing across the day
 
@@ -80,46 +101,71 @@ Sign in via the menu bar icon to the same tailnet as freeBox and the iPhone. Ver
 
 ## 2. Vaults via Obsidian Sync
 
-**Goal:** every vault from your Obsidian Sync account lives at `~/vaults/<name>/` on the Mac and is bidirectionally synced with the iPhone.
+**Goal:** every vault from your Obsidian Sync account lives at `~/Vaults/<name>/` on the Mac and is bidirectionally synced with freePhone (and atom when awake).
 
 ### 2.1 Install Obsidian and create the vaults root
 
 ```bash
 brew install --cask obsidian
-mkdir -p ~/vaults
+mkdir -p ~/Vaults
 ```
 
 ### 2.2 Sign in to Obsidian Sync
 
 Open Obsidian. The vault picker is the first thing you see — open or create *any* throwaway vault first so Obsidian's settings panel becomes accessible. Then **Settings → Sync → sign in** with your Obsidian account.
 
-### 2.3 Pull each vault to `~/vaults/<name>`
+### 2.3 Pull each vault to `~/Vaults/<name>`
 
 Obsidian Sync has no "sync all my vaults" button — repeat once per vault. For each remote vault:
 
 1. Vault picker → in the **"Show vaults stored in Obsidian Sync"** section, pick the remote vault
-2. Set the local destination to `~/vaults/<vault-name>`
+2. Set the local destination to `~/Vaults/<vault-name>`
 3. Wait for the initial sync. With ~400 MB total across 5–10 vaults, each vault completes in seconds to a couple of minutes
-4. Spot-check: edit a recent note on the iPhone and watch it appear on the Mac (and vice versa)
+4. Spot-check: edit a recent note on freePhone and watch it appear on freeMac (and vice versa)
 
-After all vaults are pulled, `ls ~/vaults` should list one subdirectory per vault, each with its own `.obsidian/` config folder.
+After all vaults are pulled, `ls ~/Vaults` should list one subdirectory per vault, each with its own `.obsidian/` config folder.
 
 ### 2.4 Verify Phase 2
 
 ```bash
-ls ~/vaults
-du -sh ~/vaults
+ls ~/Vaults
+du -sh ~/Vaults
 ```
 
 - Every expected vault is present
 - Total size is in the ballpark of 400 MB
-- An iPhone-side edit appears on the Mac within seconds, and vice versa
+- A freePhone-side edit appears on freeMac within seconds, and vice versa
 
 ---
 
-## 3. Claude Code with one tmux session per vault
+## 2.5. Syncthing (bridge freeBox ↔ freeMac)
 
-**Goal:** one always-on `claude` session per vault, plus the helper script that creates them all in one shot.
+**Goal:** freeMac peers with freeBox (and atom) via Syncthing over Tailscale, so edits made by Claude on freeBox propagate to freeMac → Obsidian Sync → freePhone, even when atom is off.
+
+### 2.5.1 Install and start Syncthing
+
+```bash
+brew install syncthing
+brew services start syncthing
+```
+
+### 2.5.2 Configure peering
+
+1. Open the Syncthing GUI at `http://127.0.0.1:8384`
+2. Add freeBox as a remote device (use its Syncthing device ID)
+3. Share the `~/Vaults` folder with freeBox (`sendreceive` mode)
+4. Copy `.stignore` from freeBox (or match the `(?d)` patterns from the existing setup)
+
+### 2.5.3 Verify
+
+- Edit a file on freeBox → appears on freeMac, and vice versa
+- Confirm Syncthing runs over Tailscale (devices should find each other via tailnet IPs)
+
+---
+
+## 3. Claude Code with per-vault remote-control sessions
+
+**Goal:** one always-on `claude remote-control` session per vault, named `freemac-<vault>` (matching the freeBox naming convention of `freebox-<vault>`), plus the helper script that creates them all in one shot.
 
 ### 3.1 Install the tools
 
@@ -134,7 +180,7 @@ The first interactive `claude` run will prompt the browser auth flow — do that
 
 ### 3.2 Clone this repo
 
-The helper script and LaunchAgent assume the repo is at `~/Vaults/freeBox`. If you keep it elsewhere, set `REPO_DIR` accordingly throughout this doc.
+The helper script and LaunchAgent assume the repo is at `~/Vaults/freeBox`. If you keep vaults elsewhere, set `VAULTS_DIR` accordingly.
 
 ```bash
 mkdir -p ~/Vaults
@@ -144,10 +190,10 @@ git clone https://github.com/dreamspy/freeBox.git
 
 ### 3.3 Run the helper script
 
-The helper at `20_scripts/mac-workstation-up.sh` is idempotent — it skips sessions that already exist and opens any vault windows that aren't already open.
+The helper at `20_scripts/mac-workstation-up.sh` is idempotent — it skips sessions that already exist and opens any vault windows that aren't already open. Each session runs `claude remote-control --name "freemac-<sanitized-vault>"` (Unicode transliterated via `iconv`, lowercased, non-alnum collapsed to `_`).
 
 ```bash
-bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh
+	bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh
 ```
 
 You should see one detached tmux session per vault and Obsidian opening one window per vault.
@@ -161,35 +207,33 @@ tmux ls
 Reattach a single session:
 
 ```bash
-tmux attach -t vault-<name>
+tmux attach -t freemac-<name>
 ```
 
 Detach without killing it: `Ctrl-b` then `d`.
 
-### 3.4 Connect Claude Code Remote Control from the iPhone
+There is also a lighter script `20_scripts/mac-obsidian-up.sh` that only opens Obsidian windows without starting Claude sessions.
 
-Important: Claude Code Remote Control **does not require Tailscale**. It tunnels through Anthropic's infrastructure and works over the public internet directly. From inside any tmux session:
+### 3.4 Connect Claude Code Remote Control from freePhone
 
-```
-/remote-control
-```
+Important: Claude Code Remote Control **does not require Tailscale**. It tunnels through Anthropic's infrastructure and works over the public internet directly. Sessions show up as `freemac-<vault>` in the Claude Code app (distinct from `freebox-<vault>` sessions on freeBox).
 
-Follow the URL/QR flow to pair the iPhone Claude Code app with that specific session. Repeat per session you want phone access to.
-
-Tailscale on the iPhone is still useful for *everything else* (SSH from Blink/Termius, hitting any future local web service, Files), but the Remote Control feature itself does not need it.
+Tailscale on freePhone is still useful for *everything else* (SSH from Blink/Termius, hitting any future local web service, Files), but the Remote Control feature itself does not need it.
 
 ### 3.5 Verify Phase 3
 
-- `tmux ls` shows one `vault-<name>` session per vault
-- Each session has a running `claude` process (`tmux attach -t vault-<name>` to spot-check)
+- `tmux ls` shows one `freemac-<name>` session per vault
+- Each session has a running `claude remote-control` process (`tmux attach -t freemac-<name>` to spot-check)
 - Obsidian has one window open per vault
-- The iPhone Claude Code app can attach to at least one session via Remote Control
+- freePhone Claude Code app can attach to at least one session — should show up as `freemac-<vault>`
 
 ---
 
 ## 4. Auto-start everything after login
 
-**Goal:** after every reboot, once you've typed the FileVault password, the Mac brings tmux sessions and Obsidian windows back without any further intervention.
+**Goal:** after every reboot, once you've typed the FileVault password, freeMac brings tmux sessions and Obsidian windows back without any further intervention.
+
+> Two helper scripts are available: `mac-workstation-up.sh` (Claude tmux + Obsidian) and `mac-obsidian-up.sh` (Obsidian-only). Use whichever fits; the LaunchAgent below uses the full version.
 
 ### 4.1 Install the LaunchAgent
 
@@ -263,15 +307,53 @@ rm ~/Library/LaunchAgents/com.freebox.mac-workstation.plist
 
 ---
 
-## 5. Day-to-day cheat sheet
+## 5. Backup ~/Vaults (rsync snapshots)
+
+**Goal:** periodic local backup so a bad sync event or accidental deletion doesn't destroy vault data.
+
+Set up periodic rsync snapshot of `~/Vaults` to a local backup location:
+
+```bash
+mkdir -p ~/Backups
+rsync -a --delete ~/Vaults/ ~/Backups/Vaults-$(date +%F)/
+```
+
+Verify:
+
+```bash
+ls -lh ~/Backups/
+```
+
+Spot-check a vault to confirm it's complete and restorable.
+
+---
+
+## 6. Cross-device sync verification
+
+**Goal:** confirm end-to-end sync works across all four machines in both directions.
+
+| Test | Path | What to verify |
+|------|------|----------------|
+| **1 — freeBox outward** | Edit on freeBox → Syncthing → atom + freeMac → Obsidian Sync → freePhone | File arrives on all devices |
+| **2 — freePhone outward** | Edit on freePhone → Obsidian Sync → atom + freeMac → Syncthing → freeBox | File arrives on all devices |
+| **3 — atom off, freeBox → freePhone** | Shut atom's lid. Edit on freeBox → Syncthing → freeMac → Obsidian Sync → freePhone | This is the reason freeMac exists |
+| **4 — SilverBullet path** | Edit on freePhone via SilverBullet PWA → freeBox disk → Syncthing → atom + freeMac | File fans out via Syncthing |
+| **5 — Conflict handling** | Edit same file on two devices simultaneously | One wins, other produces `.sync-conflict-*` file (or merges cleanly) |
+
+Document any propagation delays observed.
+
+---
+
+## 7. Day-to-day cheat sheet
 
 ```bash
 tmux ls                                # which sessions are alive
-tmux attach -t vault-<name>            # work on a vault's claude session
+tmux attach -t freemac-<name>          # work on a vault's claude session
 # Ctrl-b d                             # detach without killing
 
 bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh   # idempotent: bring missing sessions/windows back
-tail -f ~/Library/Logs/mac-workstation.log                    # debug auto-start
+bash ~/Vaults/freeBox/20_scripts/mac-obsidian-up.sh      # lighter: Obsidian windows only
+tail -f ~/Library/Logs/mac-workstation.log               # debug auto-start
 ```
 
 Periodic maintenance:
@@ -284,13 +366,13 @@ claude --version                                     # confirm Claude still work
 
 ---
 
-## 6. Common failures
+## 8. Common failures
 
 **`launchctl load` succeeds but nothing runs at login** — the script's `$PATH` doesn't include Homebrew or the Claude install dir. The helper script exports a hard-coded `PATH` for exactly this reason; check `~/Library/Logs/mac-workstation.log` for the error.
 
 **Sessions exist but `claude` is stuck at the auth prompt** — you skipped §3.1's "first interactive `claude` run." Auth state has to be on disk before the LaunchAgent fires. Run `claude` in a normal terminal once, complete the browser flow, then re-run the LaunchAgent.
 
-**Obsidian opens but vaults don't appear** — Obsidian Sync hasn't finished pulling them, or the local destination directories don't match `~/vaults/<name>/`. Open Obsidian manually and check the Sync settings.
+**Obsidian opens but vaults don't appear** — Obsidian Sync hasn't finished pulling them, or the local destination directories don't match `~/Vaults/<name>/`. Open Obsidian manually and check the Sync settings.
 
 **Tailscale ping from another device fails** — Mac woke from display sleep but the network stack is still settling, or the Tailscale app isn't logged in. Click the menu bar icon, confirm "Connected," and retry.
 
@@ -298,30 +380,32 @@ claude --version                                     # confirm Claude still work
 
 **After a power failure the Mac is unreachable** — expected: it's sitting at the FileVault unlock screen waiting for you. Walk to it, type the password, the rest auto-starts. A UPS prevents the common case.
 
-**Claude session eats CPU forever** — `tmux attach -t vault-<name>`, `Ctrl-c` in the Claude prompt, then exit. Re-run the helper script to bring it back.
+**Claude session eats CPU forever** — `tmux attach -t freemac-<name>`, `Ctrl-c` in the Claude prompt, then exit. Re-run the helper script to bring it back.
 
 ---
 
-## 7. Validation checklist
+## 9. Validation checklist
 
 After working through everything above:
 
 - [ ] `pmset -g` shows `sleep 0`, `disksleep 0`, `womp 1`, `autorestart 1`
-- [ ] `tailscale` is installed, signed in, and the Mac's tailnet IP is reachable from the iPhone
-- [ ] `~/vaults` contains every expected vault, each with a `.obsidian/` folder
-- [ ] `tmux ls` shows one `vault-<name>` session per vault
-- [ ] Each session has a running `claude` process
+- [ ] Tailscale is installed, signed in, and freeMac's tailnet IP is reachable from freePhone
+- [ ] `~/Vaults` contains every expected vault, each with a `.obsidian/` folder
+- [ ] Syncthing is running and peered with freeBox (and atom)
+- [ ] `tmux ls` shows one `freemac-<name>` session per vault
+- [ ] Each session has a running `claude remote-control` process
 - [ ] Obsidian has one window per vault
 - [ ] `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` exists and `launchctl list | grep mac-workstation` shows it loaded
-- [ ] iPhone Claude Code app pairs with at least one session via `/remote-control`
+- [ ] freePhone Claude Code app pairs with at least one session (showing as `freemac-<vault>`)
 - [ ] After a real `sudo reboot` and FileVault unlock, sessions and Obsidian windows come back automatically
+- [ ] Cross-device sync tests (§6) pass
 
 ---
 
-## 8. When this experiment ends
+## 10. Deciding freeMac's permanent role
 
 After a few weeks of running this setup, decide:
 
-- **Keep the Mac as the primary always-on workstation.** Update `10_docs/obsidian-sync.md` and `TODO.md` to reflect that decision. Decide what role freeBox plays going forward (backup workstation, code/build box, retired).
-- **Go back to freeBox.** Document why this didn't fit. Move the runbook out of the active path but keep it for reference.
+- **Keep freeMac as the always-on bridge.** Update `10_docs/obsidian-sync.md` and `TODO.md` to reflect that decision. Decide what role freeBox plays going forward (SilverBullet host only, backup workstation, retired).
+- **Go back to freeBox only.** Document why this didn't fit. Move the runbook out of the active path but keep it for reference.
 - **Hybrid.** Some vaults on the Mac, some classes of work on freeBox. Pick the boundary explicitly and write it down.

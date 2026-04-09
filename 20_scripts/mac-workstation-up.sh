@@ -44,7 +44,7 @@ sanitize() {
       s="$t"
     fi
   fi
-  s="${s,,}"
+  s="$(printf '%s' "$s" | tr '[:upper:]' '[:lower:]')"
   s="${s//[^a-z0-9]/_}"
   while [[ "$s" == *__* ]]; do s="${s//__/_}"; done
   s="${s#_}"

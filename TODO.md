@@ -21,23 +21,31 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] End-to-end propagation test (iPhone SB edit → freeBox disk → Syncthing → Mac → Obsidian Sync → iPhone Obsidian; and Claude on freeBox edits same files)
 - [ ] Decide whether the JWT-secret-per-vault re-login on first visit is annoying enough to warrant a fixed JWT secret env var (so all vaults share auth state)
 
-## freeMac setup (M1 MacBook Pro as 24/7 Claude + Obsidian workstation)
+## freeMac setup (M1 MacBook Pro as 24/7 Claude + Obsidian + Syncthing workstation)
 
-> MacBook Pro (M1) called **freeMac**. Vault sync via **Obsidian Sync** (same as iPhone). Per-vault Claude remote-control sessions in tmux (same pattern as freeBox). Full runbook: [`10_docs/mac-workstation.md`](10_docs/mac-workstation.md). Helper script: [`20_scripts/mac-workstation-up.sh`](20_scripts/mac-workstation-up.sh).
+> MacBook Pro (M1) called **freeMac**. Runs Obsidian Sync (bridge to freePhone when atom is off), Syncthing (peer mesh with freeBox and atom), and per-vault Claude remote-control sessions in tmux (same pattern as freeBox). Full runbook: [`10_docs/mac-workstation.md`](10_docs/mac-workstation.md). Helper scripts: [`20_scripts/mac-workstation-up.sh`](20_scripts/mac-workstation-up.sh) (Claude tmux + Obsidian), [`20_scripts/mac-obsidian-up.sh`](20_scripts/mac-obsidian-up.sh) (Obsidian-only).
+>
+> **Machines:**
+> - **freePhone** — iPhone; edits via Obsidian, SilverBullet PWA, Claude remote control (to freeBox)
+> - **freeBox** — Linode VPS; runs SilverBullet, Syncthing to atom and freeMac
+> - **atom** — day-to-day MacBook; Obsidian, Claude CLI, Claude Desktop remote (to freeBox/freeMac), Syncthing + Obsidian Sync
+> - **freeMac** — always-on Mac "server"; Obsidian Sync (bridge to freePhone when atom is off), Syncthing, Claude CLI remote in tmux
+>
+> **Sync topology:**
+> ```
+> freeBox ⇄ Syncthing ⇄ freeMac ⇄ Obsidian Sync ⇄ freePhone
+>     ↑        ⇅                     Obsidian Sync ⇄ atom
+>     ↑    Syncthing ⇄ atom
+> SilverBullet (freePhone PWA)
+> ```
+> Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync.
+> freeMac is the always-on bridge; atom syncs when awake.
 >
 > **Claude remote-control naming convention** (consistent across all machines):
 > - freeBox sessions: `freebox-<vault-name>` (via `freebox-vaults-up.sh`)
 > - freeMac sessions: `freemac-<vault-name>` (via `mac-workstation-up.sh`)
 >
-> **Sync topology (decided):**
-> ```
-> freeBox ⇄ Syncthing ⇄ freeMac ⇄ Obsidian Sync ⇄ iPhone
->     ↑        ⇅                     Obsidian Sync ⇄ Main Mac
->     ↑    Syncthing ⇄ Main Mac
-> SilverBullet (iPhone PWA)
-> ```
-> Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync.
-> freeMac is the always-on bridge; main Mac syncs when awake.
+> **Adding a new vault:** Obsidian Sync has no "sync all" — each new remote vault must be manually pulled on freeMac via the Obsidian GUI (vault picker → "Show vaults stored in Obsidian Sync" → set path to `~/Vaults/<name>`). This is the one unavoidable manual step.
 
 ### Phase 0 — Factory reset + macOS 26
 
@@ -51,65 +59,68 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 - [x] Set macOS hostname to `freeMac` (System Settings → General → Sharing → Local Hostname)
 - [x] Apply `pmset` settings (`sleep 0`, `disksleep 0`, `womp 1`, `autorestart 1`, etc. — see runbook §1.1)
-- [ ] Verify with `pmset -g`
-- [ ] Plug Mac in permanently; trust Optimized Battery Charging
-- [ ] Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-- [ ] Install Tailscale: `brew install --cask tailscale`
-- [ ] Sign into the tailnet (same account as freeBox + iPhone), rename to `freemac` in the [admin console](https://login.tailscale.com/admin/machines)
-- [ ] Verify freeMac's tailnet IP is reachable from the iPhone and from this Mac
-- [ ] (Later, when going lid-closed) install Amphetamine and enable its lid-closed trigger
+- [x] Verify with `pmset -g`
+- [x] Plug Mac in permanently; trust Optimized Battery Charging
+- [x] Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+- [x] Install Tailscale: `brew install --cask tailscale`
+- [x] Sign into the tailnet (same account as freeBox + iPhone), rename to `freemac` in the [admin console](https://login.tailscale.com/admin/machines)
+- [x] Verify freeMac's tailnet IP is reachable from the iPhone and from this Mac
+- [x] (Later, when going lid-closed) install Amphetamine and enable its lid-closed trigger
 
 ### Phase 2 — Vaults via Obsidian Sync
 
-- [ ] `brew install --cask obsidian`
-- [ ] `mkdir -p ~/Vaults`
-- [ ] Open Obsidian → Settings → Sync → sign in with your Obsidian account
-- [ ] For each remote vault: pull to `~/Vaults/<vault-name>` via "Show vaults stored in Obsidian Sync"
+- [x] `brew install --cask obsidian`
+- [x] `mkdir -p ~/Vaults`
+- [x] Open Obsidian → Settings → Sync → sign in with your Obsidian account
+- [x] For each remote vault: pull to `~/Vaults/<vault-name>` via "Show vaults stored in Obsidian Sync"
 - [ ] Verify bidirectional sync with the iPhone for one vault (edit on phone → appears on freeMac, and vice versa)
 - [ ] `ls ~/Vaults && du -sh ~/Vaults` — confirm all vaults present and total size sane
 
 ### Phase 2.5 — Syncthing (bridge freeBox ↔ freeMac)
 
-- [ ] `brew install syncthing`
-- [ ] `brew services start syncthing`
-- [ ] Open Syncthing GUI at `http://127.0.0.1:8384`
-- [ ] Add freeBox as a remote device (use its Syncthing device ID)
-- [ ] Share `~/Vaults` folder with freeBox (`sendreceive` mode)
-- [ ] Copy `.stignore` from freeBox (or match the `(?d)` patterns from the existing setup)
-- [ ] Verify bidirectional sync: edit a file on freeBox → appears on freeMac, and vice versa
-- [ ] Confirm Syncthing runs over Tailscale (devices should find each other via tailnet IPs)
+- [x] `brew install syncthing`
+- [x] `brew services start syncthing`
+- [x] Open Syncthing GUI at `http://127.0.0.1:8384`
+- [x] Add freeBox as a remote device (use its Syncthing device ID)
+- [x] Share `~/Vaults` folder with freeBox (`sendreceive` mode)
+- [x] Copy `.stignore` from freeBox (or match the `(?d)` patterns from the existing setup)
+- [x] Verify bidirectional sync: edit a file on freeBox → appears on freeMac, and vice versa
+- [x] Confirm Syncthing runs over Tailscale (devices should find each other via tailnet IPs)
 
 ### Phase 3 — Claude Code + per-vault remote-control sessions
 
-- [ ] Install Claude Code: `curl -fsSL https://claude.ai/install.sh | bash && claude --version`
-- [ ] `brew install tmux`
+- [x] Install Claude Code: `curl -fsSL https://claude.ai/install.sh | bash && claude --version`
+- [x] `brew install tmux`
 - [ ] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
-- [ ] Clone this repo: `mkdir -p ~/Vaults && cd ~/Vaults && git clone https://github.com/dreamspy/freeBox.git`
+- [x] Clone this repo: `mkdir -p ~/Vaults && cd ~/Vaults && git clone https://github.com/dreamspy/freeBox.git`
 - [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
 - [ ] Run `bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
-- [ ] Pair iPhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the iPhone app (distinct from `freebox-<vault>` sessions)
+- [ ] Pair freePhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the app (distinct from `freebox-<vault>` sessions)
 
 ### Phase 4 — Auto-start after login
+
+> Two LaunchAgents: one for Claude tmux sessions + Obsidian (`mac-workstation-up.sh`), one for Obsidian-only if you want a lighter option (`mac-obsidian-up.sh`). Use whichever fits; see runbook §4.
 
 - [ ] Install the LaunchAgent at `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` (heredoc in runbook §4.1)
 - [ ] `launchctl load` it
 - [ ] Test by killing `tmux` and Obsidian, then unloading + reloading the agent (runbook §4.2)
 - [ ] Real reboot test: `sudo reboot` → type FileVault password → confirm sessions and Obsidian windows come back automatically within ~10 seconds
 
-### Phase 5 — Backup ~/Vaults on this Mac (safety net before cross-device testing)
+### Phase 5 — Backup ~/Vaults (rsync snapshots)
 
-- [ ] Verify `~/Backups/Vaults-pre-syncthing-2026-04-09.tar.gz` still exists. If not: `tar -czf ~/Backups/Vaults-$(date +%F).tar.gz -C ~ Vaults`
-- [ ] Confirm the tarball is complete and non-empty: `ls -lh ~/Backups/Vaults-*.tar.gz`
+- [ ] Set up periodic rsync snapshot of `~/Vaults` to a local backup location (e.g. `~/Backups/Vaults-<date>/`)
+- [ ] Verify backup is complete and restorable: `ls -lh ~/Backups/` and spot-check a vault
 
-### Phase 6 — Cross-device sync and edit test
+### Phase 6 — Cross-device sync verification
 
-- [ ] **Test 1 — iPhone → freeMac:** edit a note in Obsidian on the iPhone → verify it appears on freeMac (via Obsidian Sync)
-- [ ] **Test 2 — freeMac → iPhone:** edit a note on freeMac (via Obsidian or Claude) → verify it appears on the iPhone
-- [ ] **Test 3 — freeBox → this Mac:** edit a note via Claude on freeBox → verify it appears on this Mac (via Syncthing)
-- [ ] **Test 4 — iPhone → freeBox (via SilverBullet):** edit a note in the SilverBullet PWA → verify it appears on freeBox and on this Mac
-- [ ] **Test 5 — Claude on freeMac → iPhone:** ask Claude in a `freemac-<vault>` session to create a test page → verify it shows up on the iPhone via Obsidian Sync
-- [ ] **Test 6 — Full round trip:** edit on one device → confirm it reaches all others within 1–2 minutes
-- [ ] Document any conflicts, `.sync-conflict-*` files, or propagation delays
+> **Machines:** freePhone (iPhone), freeBox (Linode VPS), atom (day-to-day MacBook), freeMac (always-on Mac).
+
+- [ ] **Test 1 — freeBox outward:** edit a file via Claude on freeBox → verify it arrives on atom (Syncthing) and freeMac (Syncthing) → verify it reaches freePhone (Obsidian Sync from either Mac)
+- [ ] **Test 2 — freePhone outward:** edit in Obsidian on freePhone → verify it arrives on atom and freeMac (Obsidian Sync) → verify it reaches freeBox (Syncthing from either Mac)
+- [ ] **Test 3 — atom off, freeBox → freePhone:** shut atom's lid or quit Obsidian+Syncthing. Edit on freeBox → Syncthing → freeMac → Obsidian Sync → freePhone. Verify the file arrives. (This is the reason freeMac exists.)
+- [ ] **Test 4 — SilverBullet path:** edit on freePhone via SilverBullet PWA → lands on freeBox disk directly → verify it fans out via Syncthing to atom and freeMac
+- [ ] **Test 5 — Conflict handling:** edit the same file on two devices simultaneously (e.g. atom + freeBox). Verify one wins and the other produces a `.sync-conflict-*` file (or merges cleanly). Document the behavior
+- [ ] Document any propagation delays
 
 ### Phase 7 — Decide whether this is permanent
 
