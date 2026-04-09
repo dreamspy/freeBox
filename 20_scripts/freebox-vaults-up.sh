@@ -13,11 +13,11 @@
 #   bash ~/freeBox/20_scripts/freebox-vaults-up.sh
 #
 # Environment overrides:
-#   VAULTS_DIR   default: $HOME/vaults
+#   VAULTS_DIR   default: $HOME/Vaults
 #
 set -euo pipefail
 
-VAULTS_DIR="${VAULTS_DIR:-$HOME/vaults}"
+VAULTS_DIR="${VAULTS_DIR:-$HOME/Vaults}"
 
 log() {
   printf '[freebox-vaults-up] %s\n' "$1"
