@@ -5,6 +5,12 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 ## freeBox — open items
 
 - [ ] Test what happens when adding a new vault, and document the full process (create folder, set up Obsidian Sync manually, Syncthing pickup, Claude session, SilverBullet access, etc.)
+	- [ ] Make Vault folder in ~/Vaults
+	- [ ] Setup obsidian sync
+	- [ ] Run claude and accept stuff on server, try to auto-accept
+	- [ ] Test working with the new vault
+		- [ ] Does the SB PWA work correctly?
+		- [ ] Do file changes propogate?
 - [ ] Run `bootstrap.sh` regularly for package updates: `scp 20_scripts/bootstrap.sh freebox:~/ && ssh freebox 'sudo bash ~/bootstrap.sh'`
 - [ ] From a *different* machine, confirm `ssh freebox` still works (Tailscale path) and `ssh <your-user>@<public-ip>` still works (direct path) — i.e. both fallbacks are healthy
 
@@ -69,7 +75,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [ ] `brew install tmux`
 - [ ] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
 - [ ] Clone this repo: `mkdir -p ~/Programming && cd ~/Programming && git clone https://github.com/dreamspy/freeBox.git`
-- [ ] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
+- [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
 - [ ] Run `bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
 - [ ] Pair iPhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the iPhone app (distinct from `freebox-<vault>` sessions)
 
