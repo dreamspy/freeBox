@@ -13,33 +13,42 @@ What's currently running on freeBox beyond the OS basics. Each service entry say
 
 ## SilverBullet — web-based markdown editor for vaults
 
-- **Service:** Docker container `silverbullet`, image `ghcr.io/silverbulletmd/silverbullet:latest`, restart policy `unless-stopped`. There is **no separate systemd unit** — Docker brings it back at boot via `docker.service`.
+Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverbullet.md). The summary here is just "what is running and where".
+
+- **Service:** Docker container `silverbullet`, image `ghcr.io/silverbulletmd/silverbullet:latest`, restart policy `unless-stopped`. No systemd unit — Docker brings it back at boot via `docker.service`.
 - **Listens on:** `127.0.0.1:3000` (loopback only — not directly reachable from the public internet).
-- **Vault mounted in container:** `~/Vaults/Workout plan` → `/space`. Currently one vault; mount more under different container paths if needed.
-- **Auth:** HTTP basic auth via `SB_USER=<user>:<password>` env var. The actual value lives in `SECRETS.md` — never commit it.
-- **Container env (sensitive bits replaced):**
-  ```
-  SB_USER=<user>:<password-from-SECRETS.md>
-  SB_HOSTNAME=0.0.0.0
-  SB_FOLDER=/space
-  SB_PORT=3000
-  ```
-- **Inspecting:** `docker ps`, `docker logs silverbullet`, `docker inspect silverbullet`.
+- **Vault mounted in container:** one of `~/Vaults/<vault>/` bound to `/space`. **Only one vault at a time** — switching is done by stopping the container and starting a new one with a different `-v` mount, encapsulated in `~/bin/sb-switch <vault>`. Container name (`silverbullet`), host port (`3000`), and HTTPS URL all stay the same across switches.
+- **Auth:** form-based login (not HTTP Basic) via `SB_USER=<user>:<password>` env var. The actual value lives in `~/.silverbullet.env` (mode 600) on freeBox and in `SECRETS.md` locally — never committed. SilverBullet generates a fresh JWT secret per space on first start, persisted in `<vault>/.silverbullet.auth.json` (which is `(?d)`-ignored by Syncthing — auth state stays local to freeBox).
+- **Container env actually in use:** just `SB_USER`. SilverBullet picks up the listen address (`0.0.0.0`), port (`3000`), and space dir (`/space`) from defaults; no `SB_HOSTNAME`/`SB_FOLDER`/`SB_PORT` env vars are set.
+- **Inspecting:** `docker ps`, `docker logs silverbullet`, `docker inspect silverbullet --format "{{range .Mounts}}{{.Source}}{{end}}"` (the last one tells you which vault is currently mounted).
 
-## Tailscale — VPN and HTTPS front for SilverBullet
+## sb-launcher — vault picker web app for the iPhone
 
-- **Tailscale itself:** running, the freeBox node has a stable tailnet IP (in `SECRETS.md`).
-- **Tailscale Serve:** port `:443` is listening on the tailnet IPv4 and IPv6 addresses. This is consistent with Tailscale Serve fronting SilverBullet's `127.0.0.1:3000` and exposing it as `https://freebox.<tailnet>.ts.net/` over the tailnet only (not Funnel — not the public internet).
-- **Verifying / restoring the config:** reading the live serve config requires root.
-  ```bash
-  ssh freebox sudo tailscale serve status
+- **Service:** `sb-launcher.service` — a system-mode systemd unit running `python3 /home/frimann/silverbullet-launcher/launcher.py` as the `frimann` user with `SupplementaryGroups=docker` so it can drive the Docker daemon. Restart on failure, enabled at boot.
+- **Listens on:** `127.0.0.1:3001` (loopback only). Reachable from the tailnet because Tailscale Serve mounts it at `https://freebox.<tailnet>.ts.net/launcher`.
+- **What it does:** serves a single HTML page listing every non-hidden subdirectory of `~/Vaults/` as a button. POSTing a vault name runs `~/bin/sb-switch <vault>`, which restarts the SilverBullet container with that vault mounted, and re-renders the page with a "Switched" banner. No state of its own — vault list comes from the live filesystem on every request.
+- **Source of truth:** [`20_scripts/sb-launcher.py`](../20_scripts/sb-launcher.py). Stdlib only, no dependencies. Edit there, then run [`20_scripts/redeploy-sb-launcher.sh`](../20_scripts/redeploy-sb-launcher.sh) from the Mac to scp + restart.
+- **First-time install:** [`20_scripts/install-sb-launcher.sh`](../20_scripts/install-sb-launcher.sh) — writes the systemd unit, enables it, and adds the `/launcher` Tailscale Serve mount.
+- **Why a separate launcher rather than just SSHing `sb-switch` from a phone shortcut:** lets the iPhone be the only device involved (no SSH credentials in iOS Shortcuts), the vault list updates automatically when vaults are added/removed on disk, and the only thing the public-facing endpoint can do is `sb-switch` (validated against the live filesystem listing — no path traversal or arbitrary command execution).
+
+## Tailscale — VPN and HTTPS front for SilverBullet + launcher
+
+- **Tailscale itself:** running, the freeBox node has a stable tailnet IP (in `SECRETS.md`). The user is set as the tailscale operator (`sudo tailscale set --operator=$USER`) so most `tailscale ...` commands don't need sudo.
+- **Tailscale Serve:** two mounts on the same `:443` HTTPS endpoint, both tailnet-only (not Funnel — not the public internet):
   ```
-  If it's missing, recreate with something like:
-  ```bash
-  sudo tailscale serve --bg --https=443 --set-path / http://127.0.0.1:3000
+  https://freebox.<tailnet>.ts.net (tailnet only)
+  |-- /         proxy http://127.0.0.1:3000   ← SilverBullet
+  |-- /launcher proxy http://127.0.0.1:3001   ← sb-launcher
   ```
-  (Adjust to match the existing setup before applying.)
-- **Why no Funnel:** the SilverBullet `SB_USER` basic-auth credential is the only protection in front of the editor; exposing it to the public internet via Funnel would be a much bigger blast radius for a single shared password.
+  The cert is auto-issued by Let's Encrypt via Tailscale and renews automatically.
+- **Verifying:** `tailscale serve status` (no sudo needed with operator set).
+- **Recreating from scratch** (after a wipe or `tailscale serve --https=443 off`):
+  ```bash
+  sudo tailscale serve --bg --https=443 http://127.0.0.1:3000
+  sudo tailscale serve --bg --https=443 --set-path=/launcher http://127.0.0.1:3001
+  ```
+  Note: `tailscale serve --set-path=/launcher` **strips the `/launcher` prefix** before forwarding to the backend, so the launcher's HTTP handler is written to accept both `/foo` and `/launcher/foo` for every route.
+- **Why no Funnel:** SB's single shared `SB_USER` credential is the only protection in front of the editor; exposing it to the public internet would be a much bigger blast radius for a single shared password. Tailscale Serve already works from any tailnet device, including the iPhone (with the iOS Tailscale app installed and signed in).
 
 ## Claude Code Remote Control — one tmux session per vault
 

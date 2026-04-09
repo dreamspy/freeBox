@@ -52,7 +52,26 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] Document the per-vault session naming convention — see the script header and `10_docs/freebox-services.md`
 - [x] Enable lingering so the systemd user unit starts the sessions at boot: `sudo loginctl enable-linger frimann` (one-time, requires sudo)
 - [x] Verify the unit auto-starts after a real reboot — confirmed 2026-04-09: all vault tmux sessions came back up automatically
-- [ ] Add `.stignore` `(?d)` prefixes for volatile patterns (`.DS_Store`, `.obsidian/workspace*`, `.obsidian/cache`, etc.) so Syncthing can delete dirs containing those on a peer — see `10_docs/obsidian-sync.md` for the gotcha
+- [x] Add `.stignore` `(?d)` prefixes for volatile patterns (`.DS_Store`, `.obsidian/workspace*`, `.obsidian/cache`, etc.) so Syncthing can delete dirs containing those on a peer — see `10_docs/obsidian-sync.md` for the gotcha
+
+## SilverBullet on freeBox (iOS-friendly markdown editor)
+
+> **Added 2026-04-09.** Self-hosted markdown editor running in a Docker container on freeBox, fronted by Tailscale Serve so the iPhone (with the Tailscale app installed) can install it as a PWA over `https://freebox.<tailnet>.ts.net`. One container at a time, switched between vaults via `sb-switch`. A small Python launcher served at `/launcher` lets you switch vaults from the iPhone without SSH. Full runbook: [`10_docs/silverbullet.md`](10_docs/silverbullet.md). Service summary: [`10_docs/freebox-services.md`](10_docs/freebox-services.md).
+
+- [x] Install Docker on freeBox (`get.docker.com`, add user to `docker` group)
+- [x] Generate SilverBullet password, store in `SECRETS.md` and `~/.silverbullet.env` (mode 600) on freeBox
+- [x] Run `silverbullet` container bound to `127.0.0.1:3000` with one vault mounted
+- [x] Set up `tailscale serve` mount `/` → `127.0.0.1:3000` (HTTPS via Tailscale's auto-issued cert)
+- [x] Verify `https://freebox.<tailnet>.ts.net` reachable from the Mac browser
+- [x] Install SilverBullet PWA on iPhone (Add to Home Screen from Safari)
+- [x] Add `~/bin/sb-switch <vault>` script for one-vault-at-a-time switching
+- [x] Build `sb-launcher.py` (stdlib HTTP server) — vault picker web app at `127.0.0.1:3001`
+- [x] Install `sb-launcher.service` (systemd, `SupplementaryGroups=docker`) so the launcher survives reboots
+- [x] Add second `tailscale serve` mount `/launcher` → `127.0.0.1:3001` (`--set-path=/launcher`)
+- [x] Install launcher PWA on iPhone (second home-screen icon)
+- [x] Web App Manifest with `start_url=/launcher`/`scope=/launcher/` so iOS pins the launcher PWA's home and it doesn't get stuck on SB after navigating away
+- [ ] **Open:** end-to-end propagation test (iPhone SB edit → freeBox disk → Syncthing → Mac → Obsidian Sync → iPhone Obsidian; and Claude on freeBox edits same files)
+- [ ] **Open:** decide whether the JWT-secret-per-vault re-login on first visit is annoying enough to warrant a fixed JWT secret env var (so all vaults share auth state)
 
 ## Mac always-on workstation (active experiment, 2026-04-09)
 

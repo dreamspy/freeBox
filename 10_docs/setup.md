@@ -243,6 +243,34 @@ And from another machine: `ssh freebox` still works, and `ssh <your-user>@<tails
 
 ---
 
+## 13b. Mac client gotcha — MagicDNS with Homebrew `tailscaled`
+
+If your Mac is running the **Homebrew** build of Tailscale (`/opt/homebrew/bin/tailscaled`) rather than the App Store / official Mac app, MagicDNS hostnames like `freebox.<tailnet>.ts.net` will **not resolve via the system resolver** even when:
+
+- MagicDNS is enabled in the tailnet admin console
+- `tailscale debug prefs` shows `"CorpDNS": true`
+- `tailscale status` shows the peer node correctly
+
+The Homebrew daemon doesn't install the per-domain DNS resolver that macOS uses to route a specific suffix to a specific nameserver. Symptom: `dig` returns nothing for the FQDN, but querying Tailscale's resolver directly works (`dig @100.100.100.100 freebox.<tailnet>.ts.net` returns the 100.x IP just fine).
+
+**Fix (one-liner, fully reversible):**
+
+```bash
+sudo mkdir -p /etc/resolver \
+  && echo "nameserver 100.100.100.100" | sudo tee /etc/resolver/<tailnet>.ts.net \
+  && sudo killall -HUP mDNSResponder
+```
+
+Replace `<tailnet>.ts.net` with your actual tailnet MagicDNS suffix (in `SECRETS.md`). After this, `curl https://freebox.<tailnet>.ts.net/` and Safari both resolve correctly. (`dig` will *still* show empty — `dig` bypasses `/etc/resolver/`. Test with `curl` or a browser, not `dig`.)
+
+To undo: `sudo rm /etc/resolver/<tailnet>.ts.net`.
+
+The official Mac App Store / standalone Tailscale app handles this automatically via a system network extension and doesn't need the workaround. The Homebrew CLI build is fine for everything else (`tailscale up`, `tailscale status`, `tailscale serve`), it just can't install per-domain resolvers on macOS.
+
+iOS Tailscale uses the iOS network extension and handles MagicDNS correctly out of the box — no equivalent workaround needed there.
+
+---
+
 ## 14. Common failures
 
 **`ssh: connection refused`** — SSH service down, firewall blocking 22, or wrong port. Check `sudo systemctl status ssh` and `sudo ufw status verbose`.
@@ -274,3 +302,17 @@ Health snapshot:
 ```bash
 bash 20_scripts/check-health.sh
 ```
+
+---
+
+## 16. SilverBullet on freeBox (iOS-friendly markdown editor)
+
+A separate runbook covers the SilverBullet container, the per-vault `sb-switch` workflow, and the Python-based vault launcher PWA: see [`silverbullet.md`](silverbullet.md). The "what services are running" view is in [`freebox-services.md`](freebox-services.md).
+
+The short version of how to use it once installed:
+
+- `https://freebox.<tailnet>.ts.net` — SilverBullet, currently mounted vault. Add to iPhone home screen as a PWA.
+- `https://freebox.<tailnet>.ts.net/launcher` — vault picker. Tap a vault → 5–10s wait → SilverBullet container is restarted with that vault mounted. Also a PWA on the iPhone home screen.
+- `ssh freebox sb-switch "Vault Name"` — same thing from a shell.
+
+Both URLs are tailnet-only via Tailscale Serve (no Funnel, no public DNS, no Caddy).

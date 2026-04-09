@@ -65,9 +65,19 @@ This project sets up and maintains **freeBox**, a Linode Ubuntu 24.04 LTS VPS us
 - `TODO.md` — persistent server-setup checklist; update it when work is finished or new items appear
 - `SECRETS.md` — local-only, gitignored; the only place sensitive values may live
 - `10_docs/` — durable documentation
-  - `setup.md` — end-to-end runbook
-  - `obsidian-sync.md` — comparison of vault-sync options (undecided)
-- `20_scripts/` — executable scripts (`bootstrap.sh`, `check-health.sh`)
+  - `setup.md` — end-to-end provisioning runbook
+  - `freebox-services.md` — what's currently running on freeBox (Syncthing, SilverBullet, sb-launcher, Tailscale Serve, Claude vault sessions)
+  - `silverbullet.md` — SilverBullet + vault launcher runbook (iOS-friendly markdown editor for vaults)
+  - `obsidian-sync.md` — vault-sync comparison + decision history (current decision: Syncthing-based, see top of file)
+  - `mac-workstation.md` — separate experiment: M1 MBP as 24/7 Claude+Obsidian workstation
+  - `linode-vs-mac-mini.md` — earlier hosting comparison (background reading)
+- `20_scripts/` — executable scripts
+  - `bootstrap.sh`, `check-health.sh` — server provisioning/health
+  - `freebox-vaults-up.sh`, `freebox-vaults-up.service` — start one Claude Code Remote Control tmux session per vault
+  - `sb-launcher.py` — Python stdlib HTTP server for the vault picker PWA
+  - `install-sb-launcher.sh` — one-time installer for the launcher (systemd unit + tailscale serve mount)
+  - `redeploy-sb-launcher.sh` — iterative redeploy after editing `sb-launcher.py`
+  - `mac-workstation-up.sh` — Mac side of the workstation experiment
 - `00_inbox/` — local-only scratch area, gitignored; contains `files from chatGPT/` (the original ChatGPT proposal bundle, kept as reference — **do not edit**)
 - `.obsidian/` — local Obsidian vault config, gitignored
 - Numbered prefixes (`10_`, `20_`) sort folders by reading order; new items use gaps so insertions are easy
