@@ -50,8 +50,8 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] Copy all important vaults onto freeBox under `~/Vaults/<vault>/` — done via Syncthing peering with the Mac
 - [x] For each vault, start a dedicated Claude session via `freebox-vaults-up.sh` (one detached tmux session per vault running `claude remote-control --name "freebox-<sanitized-vault>"`)
 - [x] Document the per-vault session naming convention — see the script header and `10_docs/freebox-services.md`
-- [ ] Enable lingering so the systemd user unit starts the sessions at boot: `sudo loginctl enable-linger frimann` (one-time, requires sudo)
-- [ ] Verify the unit auto-starts after a real reboot (`sudo reboot`, then `ssh freebox 'systemctl --user status freebox-vaults-up.service && tmux ls'`)
+- [x] Enable lingering so the systemd user unit starts the sessions at boot: `sudo loginctl enable-linger frimann` (one-time, requires sudo)
+- [x] Verify the unit auto-starts after a real reboot — confirmed 2026-04-09: all vault tmux sessions came back up automatically
 - [ ] Add `.stignore` `(?d)` prefixes for volatile patterns (`.DS_Store`, `.obsidian/workspace*`, `.obsidian/cache`, etc.) so Syncthing can delete dirs containing those on a peer — see `10_docs/obsidian-sync.md` for the gotcha
 
 ## Mac always-on workstation (active experiment, 2026-04-09)
