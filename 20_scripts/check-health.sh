@@ -5,6 +5,9 @@
 #
 set -euo pipefail
 
+# Ensure user-local bins are visible (non-interactive ssh sessions don't load ~/.profile)
+export PATH="$HOME/.local/bin:$PATH"
+
 section() {
   printf '\n### %s ###\n' "$1"
 }
@@ -34,7 +37,11 @@ fi
 
 section "Firewall"
 if command -v ufw >/dev/null 2>&1; then
-  sudo ufw status verbose || ufw status verbose || true
+  if sudo -n ufw status verbose 2>/dev/null; then
+    :
+  else
+    echo "ufw: needs sudo (run with: sudo $0, or 'ssh -t freeBox sudo ufw status verbose')"
+  fi
 fi
 
 section "Tailscale"
