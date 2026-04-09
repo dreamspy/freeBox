@@ -1,0 +1,13 @@
+[Unit]
+Description=Start Claude Code Remote Control tmux sessions per vault
+Documentation=file:///home/frimann/freeBox/10_docs/freebox-services.md
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/freeBox/20_scripts/freebox-vaults-up.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

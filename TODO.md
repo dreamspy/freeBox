@@ -42,16 +42,17 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] Run `bash 20_scripts/check-health.sh` on freeBox and confirm: SSH active, ufw active, Tailscale connected, Claude installed, tmux session present
 - [ ] From a *different* machine, confirm `ssh freebox` still works (Tailscale path) and `ssh <your-user>@<public-ip>` still works (direct path) — i.e. both fallbacks are healthy before any hardening
 
-## Obsidian on the server
+## Vaults on freeBox (Syncthing + per-vault Claude sessions)
 
-> **Deferred (2026-04-08).** Decision: vaults stay off freeBox for now. Day-to-day notes continue on Mac + iPhone via Obsidian Sync, with AI assistance via the Claude Code remote app. See [`10_docs/obsidian-sync.md`](10_docs/obsidian-sync.md) for the decision block and revisit triggers. The items below are kept as a starting point if/when this is reopened.
+> **Decided 2026-04-09 — reverses the 2026-04-08 "vaults off freeBox" deferral.** Vaults live on freeBox at `~/Vaults/<vault>/` and sync to the Mac (and any other peer) via **Syncthing** over Tailscale. Per-vault Claude Code Remote Control sessions are started by [`20_scripts/freebox-vaults-up.sh`](20_scripts/freebox-vaults-up.sh). See [`10_docs/obsidian-sync.md`](10_docs/obsidian-sync.md) for the decision block and [`10_docs/freebox-services.md`](10_docs/freebox-services.md) for the running services.
 
-- [ ] ~~Decide on a sync strategy for Obsidian vaults on freeBox~~ — decided: defer (see above)
-- [ ] Copy all important vaults onto freeBox under a known location (e.g. `~/vaults/<vault-name>/`) — only if the decision above is reopened
-- [ ] For each vault, start a dedicated Claude session inside its own tmux window:
-  - `tmux new -s vault-<name>` then `cd ~/vaults/<name> && claude`
-  - One session per vault keeps context, history, and Remote Control flows isolated
-- [ ] Document the per-vault session naming convention so reattaching is predictable
+- [x] Decide on a sync strategy for Obsidian vaults on freeBox — Syncthing
+- [x] Copy all important vaults onto freeBox under `~/Vaults/<vault>/` — done via Syncthing peering with the Mac
+- [x] For each vault, start a dedicated Claude session via `freebox-vaults-up.sh` (one detached tmux session per vault running `claude remote-control --name "freebox-<sanitized-vault>"`)
+- [x] Document the per-vault session naming convention — see the script header and `10_docs/freebox-services.md`
+- [ ] Enable lingering so the systemd user unit starts the sessions at boot: `sudo loginctl enable-linger frimann` (one-time, requires sudo)
+- [ ] Verify the unit auto-starts after a real reboot (`sudo reboot`, then `ssh freebox 'systemctl --user status freebox-vaults-up.service && tmux ls'`)
+- [ ] Add `.stignore` `(?d)` prefixes for volatile patterns (`.DS_Store`, `.obsidian/workspace*`, `.obsidian/cache`, etc.) so Syncthing can delete dirs containing those on a peer — see `10_docs/obsidian-sync.md` for the gotcha
 
 ## Mac always-on workstation (active experiment, 2026-04-09)
 

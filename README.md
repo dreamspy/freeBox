@@ -19,13 +19,16 @@ freeBox/
 ├── .gitignore
 ├── 10_docs/
 │   ├── setup.md             ← end-to-end runbook for the server
-│   ├── obsidian-sync.md     ← comparison of vault-sync options (decided 2026-04-08)
+│   ├── obsidian-sync.md     ← vault sync decision (Syncthing, decided 2026-04-09)
+│   ├── freebox-services.md  ← what's running on freeBox: Syncthing, SilverBullet, Tailscale Serve, vault sessions
 │   ├── mac-workstation.md   ← runbook for the Mac always-on workstation experiment
 │   └── linode-vs-mac-mini.md
 ├── 20_scripts/
-│   ├── bootstrap.sh             ← idempotent first-time provisioning of freeBox
-│   ├── check-health.sh          ← quick health snapshot
-│   └── mac-workstation-up.sh    ← bring Mac sessions and Obsidian windows back up
+│   ├── bootstrap.sh                  ← idempotent first-time provisioning of freeBox
+│   ├── check-health.sh               ← quick health snapshot
+│   ├── freebox-vaults-up.sh          ← start one Claude remote-control tmux session per vault
+│   ├── freebox-vaults-up.service     ← systemd user unit that runs the above at boot
+│   └── mac-workstation-up.sh         ← bring Mac sessions and Obsidian windows back up
 └── 00_inbox/              ← local-only scratch area (gitignored)
     └── files from chatGPT/  ← original ChatGPT proposals, kept as reference
 ```
