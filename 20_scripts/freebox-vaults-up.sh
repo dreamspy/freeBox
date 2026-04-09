@@ -141,6 +141,30 @@ for vault_dir in "${vault_dirs[@]}"; do
 done
 
 log "tmux sessions: $vault_count vaults total, $new_sessions newly started"
+
+# --- 5. Clean up orphaned sessions for deleted vaults ---------------------
+# Build a set of expected session names from the vault dirs we just processed,
+# then kill any vault-* tmux session that isn't in the set.
+declare -A expected_sessions
+for vault_dir in "${vault_dirs[@]}"; do
+  safe="$(sanitize "$(basename "$vault_dir")")"
+  [[ -n "$safe" ]] && expected_sessions["vault-${safe}"]=1
+done
+
+killed=0
+while IFS=: read -r sess _rest; do
+  # Only consider sessions with the vault- prefix
+  if [[ "$sess" == vault-* ]] && [[ -z "${expected_sessions[$sess]+x}" ]]; then
+    log "killing orphaned session $sess (vault dir no longer exists)"
+    tmux kill-session -t "$sess"
+    killed=$((killed + 1))
+  fi
+done < <(tmux ls -F '#{session_name}:' 2>/dev/null || true)
+
+if [[ "$killed" -gt 0 ]]; then
+  log "cleaned up $killed orphaned session(s)"
+fi
+
 tmux ls 2>/dev/null || true
 
 log "done"
