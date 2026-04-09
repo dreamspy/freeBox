@@ -6,7 +6,7 @@ What's currently running on freeBox beyond the OS basics. Each service entry say
 
 - **Service:** `syncthing@frimann.service` (system unit from the Ubuntu `syncthing` package, instantiated for the `frimann` user). Enabled, starts at boot.
 - **Ports:**
-  - `127.0.0.1:8384` — Web GUI, loopback only. Reach it from the Mac via an SSH tunnel: `ssh -L 8384:127.0.0.1:8384 freebox` then http://localhost:8384.
+  - `127.0.0.1:8384` — Web GUI, loopback only. Exposed via Tailscale Serve at `https://freebox.<tailnet>.ts.net:8384` (tailnet only). Requires `<insecureSkipHostcheck>true</insecureSkipHostcheck>` in the `<gui>` block of `~/.local/state/syncthing/config.xml` — without it Syncthing rejects requests where the Host header isn't `localhost` (safe here because access is already gated by Tailscale). Fallback: SSH tunnel `ssh -L 8384:127.0.0.1:8384 freebox` then http://localhost:8384.
   - `:22000` (TCP/UDP) — Syncthing protocol, used for peer connections (Tailscale-routed in practice).
 - **Folder shared:** `~/Vaults/`, mode `sendreceive`, paired peer-to-peer with the Mac (and any other Syncthing peer on the tailnet). Syncthing's own discovery handles the connection.
 - **`.stignore` gotcha:** Syncthing refuses to delete a directory on a peer if that directory still contains files matched by `.stignore`. Volatile patterns like `.DS_Store`, `.obsidian/workspace*`, `.obsidian/cache`, etc. **must** use the `(?d)` prefix so Syncthing is allowed to remove them on delete. Symptom is `needDeletes > 0` and `pullErrors > 0` stuck on the peer that's behind. See `10_docs/obsidian-sync.md` for the full decision block.
@@ -34,18 +34,22 @@ Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverb
 ## Tailscale — VPN and HTTPS front for SilverBullet + launcher
 
 - **Tailscale itself:** running, the freeBox node has a stable tailnet IP (in `SECRETS.md`). The user is set as the tailscale operator (`sudo tailscale set --operator=$USER`) so most `tailscale ...` commands don't need sudo.
-- **Tailscale Serve:** two mounts on the same `:443` HTTPS endpoint, both tailnet-only (not Funnel — not the public internet):
+- **Tailscale Serve:** three mounts, all tailnet-only (not Funnel — not the public internet):
   ```
   https://freebox.<tailnet>.ts.net (tailnet only)
   |-- /         proxy http://127.0.0.1:3000   ← SilverBullet
   |-- /launcher proxy http://127.0.0.1:3001   ← sb-launcher
+
+  https://freebox.<tailnet>.ts.net:8384 (tailnet only)
+  |-- /         proxy http://127.0.0.1:8384   ← Syncthing Web GUI
   ```
-  The cert is auto-issued by Let's Encrypt via Tailscale and renews automatically.
+  The certs are auto-issued by Let's Encrypt via Tailscale and renew automatically.
 - **Verifying:** `tailscale serve status` (no sudo needed with operator set).
 - **Recreating from scratch** (after a wipe or `tailscale serve --https=443 off`):
   ```bash
   sudo tailscale serve --bg --https=443 http://127.0.0.1:3000
   sudo tailscale serve --bg --https=443 --set-path=/launcher http://127.0.0.1:3001
+  sudo tailscale serve --bg --https=8384 http://127.0.0.1:8384
   ```
   Note: `tailscale serve --set-path=/launcher` **strips the `/launcher` prefix** before forwarding to the backend, so the launcher's HTTP handler is written to accept both `/foo` and `/launcher/foo` for every route.
 - **Why no Funnel:** SB's single shared `SB_USER` credential is the only protection in front of the editor; exposing it to the public internet would be a much bigger blast radius for a single shared password. Tailscale Serve already works from any tailnet device, including the iPhone (with the iOS Tailscale app installed and signed in).
