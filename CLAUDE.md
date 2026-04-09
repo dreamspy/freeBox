@@ -74,6 +74,7 @@ This project sets up and maintains **freeBox**, a Linode Ubuntu 24.04 LTS VPS us
 - `20_scripts/` — executable scripts
   - `bootstrap.sh`, `check-health.sh` — server provisioning/health
   - `freebox-vaults-up.sh`, `freebox-vaults-up.service` — start one Claude Code Remote Control tmux session per vault
+  - `freebox-vaults-watch.path`, `freebox-vaults-watch.service` — systemd path watcher that auto-triggers `freebox-vaults-up.sh` when `~/Vaults/` changes
   - `sb-launcher.py` — Python stdlib HTTP server for the vault picker PWA
   - `install-sb-launcher.sh` — one-time installer for the launcher (systemd unit + tailscale serve mount)
   - `redeploy-sb-launcher.sh` — iterative redeploy after editing `sb-launcher.py`

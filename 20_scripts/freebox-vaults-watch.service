@@ -1,0 +1,9 @@
+[Unit]
+Description=Re-scan vaults and start missing Claude tmux sessions (triggered by path watcher)
+Documentation=file:///home/frimann/freeBox/10_docs/freebox-services.md
+
+[Service]
+Type=oneshot
+ExecStart=%h/freeBox/20_scripts/freebox-vaults-up.sh
+StandardOutput=journal
+StandardError=journal

@@ -72,6 +72,13 @@ Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverb
   systemctl --user daemon-reload
   systemctl --user enable --now freebox-vaults-up.service
   ```
+- **Auto-detect new vaults:** [`20_scripts/freebox-vaults-watch.path`](../20_scripts/freebox-vaults-watch.path) + [`freebox-vaults-watch.service`](../20_scripts/freebox-vaults-watch.service) — a systemd **user** path unit that watches `~/Vaults/` for changes (new subdirectory created, directory renamed, etc.) and re-runs `freebox-vaults-up.sh` automatically. No manual re-run needed after adding a vault.
+- **Install the watcher (one-time, on the server):**
+  ```bash
+  cp 20_scripts/freebox-vaults-watch.{path,service} ~/.config/systemd/user/
+  systemctl --user daemon-reload
+  systemctl --user enable --now freebox-vaults-watch.path
+  ```
 - **Manual run:** `bash ~/freeBox/20_scripts/freebox-vaults-up.sh`
 - **Inspect a session:** `tmux attach -t vault-<sanitized>` (Ctrl-b d to detach without killing).
 
