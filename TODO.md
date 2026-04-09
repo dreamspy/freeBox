@@ -50,7 +50,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 ### Phase 1 — Base setup + power management
 
 - [x] Set macOS hostname to `freeMac` (System Settings → General → Sharing → Local Hostname)
-- [ ] Apply `pmset` settings (`sleep 0`, `disksleep 0`, `womp 1`, `autorestart 1`, etc. — see runbook §1.1)
+- [x] Apply `pmset` settings (`sleep 0`, `disksleep 0`, `womp 1`, `autorestart 1`, etc. — see runbook §1.1)
 - [ ] Verify with `pmset -g`
 - [ ] Plug Mac in permanently; trust Optimized Battery Charging
 - [ ] Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
