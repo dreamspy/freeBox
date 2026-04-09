@@ -31,14 +31,13 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 >
 > **Sync topology (decided):**
 > ```
-> iPhone ↔ Obsidian Sync ↔ freeMac (Obsidian + Claude remote-control)
->                  ↕
->              Obsidian Sync
->                  ↕
-> freeBox ↔ Syncthing ↔ this Mac (bridge: Syncthing ↔ Obsidian Sync)
->     ↑
-> SilverBullet (iPhone PWA via Tailscale)
+> freeBox ⇄ Syncthing ⇄ freeMac ⇄ Obsidian Sync ⇄ iPhone
+>     ↑        ⇅                     Obsidian Sync ⇄ Main Mac
+>     ↑    Syncthing ⇄ Main Mac
+> SilverBullet (iPhone PWA)
 > ```
+> Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync.
+> freeMac is the always-on bridge; main Mac syncs when awake.
 
 ### Phase 0 — Factory reset + macOS 26
 
@@ -69,14 +68,25 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [ ] Verify bidirectional sync with the iPhone for one vault (edit on phone → appears on freeMac, and vice versa)
 - [ ] `ls ~/Vaults && du -sh ~/Vaults` — confirm all vaults present and total size sane
 
+### Phase 2.5 — Syncthing (bridge freeBox ↔ freeMac)
+
+- [ ] `brew install syncthing`
+- [ ] `brew services start syncthing`
+- [ ] Open Syncthing GUI at `http://127.0.0.1:8384`
+- [ ] Add freeBox as a remote device (use its Syncthing device ID)
+- [ ] Share `~/Vaults` folder with freeBox (`sendreceive` mode)
+- [ ] Copy `.stignore` from freeBox (or match the `(?d)` patterns from the existing setup)
+- [ ] Verify bidirectional sync: edit a file on freeBox → appears on freeMac, and vice versa
+- [ ] Confirm Syncthing runs over Tailscale (devices should find each other via tailnet IPs)
+
 ### Phase 3 — Claude Code + per-vault remote-control sessions
 
 - [ ] Install Claude Code: `curl -fsSL https://claude.ai/install.sh | bash && claude --version`
 - [ ] `brew install tmux`
 - [ ] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
-- [ ] Clone this repo: `mkdir -p ~/Programming && cd ~/Programming && git clone https://github.com/dreamspy/freeBox.git`
+- [ ] Clone this repo: `mkdir -p ~/Vaults && cd ~/Vaults && git clone https://github.com/dreamspy/freeBox.git`
 - [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
-- [ ] Run `bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
+- [ ] Run `bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
 - [ ] Pair iPhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the iPhone app (distinct from `freebox-<vault>` sessions)
 
 ### Phase 4 — Auto-start after login
@@ -111,6 +121,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 ### Optional hardening
 
 - [ ] Put freeMac on a small UPS to eliminate brief power outages
+
 
 ## Later / nice to have
 
