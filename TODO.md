@@ -4,13 +4,13 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 ## freeBox — open items
 
-- [ ] Test what happens when adding a new vault, and document the full process (create folder, set up Obsidian Sync manually, Syncthing pickup, Claude session, SilverBullet access, etc.)
-	- [ ] Make Vault folder in ~/Vaults
-	- [ ] Setup obsidian sync
-	- [ ] Run claude and accept stuff on server, try to auto-accept
-	- [ ] Test working with the new vault
-		- [ ] Does the SB PWA work correctly?
-		- [ ] Do file changes propogate?
+- [x] Test what happens when adding a new vault, and document the full process (create folder, set up Obsidian Sync manually, Syncthing pickup, Claude session, SilverBullet access, etc.)
+	- [x] Make Vault folder in ~/Vaults
+	- [x] Setup obsidian sync
+	- [x] Run claude and accept stuff on server, try to auto-accept
+	- [x] Test working with the new vault
+		- [x] Does the SB PWA work correctly?
+		- [x] Do file changes propogate?
 - [ ] Run `bootstrap.sh` regularly for package updates: `scp 20_scripts/bootstrap.sh freebox:~/ && ssh freebox 'sudo bash ~/bootstrap.sh'`
 - [ ] From a *different* machine, confirm `ssh freebox` still works (Tailscale path) and `ssh <your-user>@<public-ip>` still works (direct path) — i.e. both fallbacks are healthy
 
@@ -42,15 +42,15 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 ### Phase 0 — Factory reset + macOS 26
 
-- [ ] Back up anything needed from the current install (if any)
-- [ ] Factory reset the M1 MacBook Pro (Erase All Content and Settings, or Recovery Mode reinstall)
+- [x] Back up anything needed from the current install (if any)
+- [x] Factory reset the M1 MacBook Pro (Erase All Content and Settings, or Recovery Mode reinstall)
 - [ ] Install macOS 26 (clean install)
-- [ ] Complete initial macOS setup (account, language, etc.)
+- [x] Complete initial macOS setup (account, language, etc.)
 - [ ] Enable FileVault (accept tradeoff: one manual password entry after every reboot)
 
 ### Phase 1 — Base setup + power management
 
-- [ ] Set macOS hostname to `freeMac` (System Settings → General → Sharing → Local Hostname)
+- [x] Set macOS hostname to `freeMac` (System Settings → General → Sharing → Local Hostname)
 - [ ] Apply `pmset` settings (`sleep 0`, `disksleep 0`, `womp 1`, `autorestart 1`, etc. — see runbook §1.1)
 - [ ] Verify with `pmset -g`
 - [ ] Plug Mac in permanently; trust Optimized Battery Charging
