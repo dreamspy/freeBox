@@ -37,7 +37,7 @@ This project sets up and maintains **freeBox**, a Linode Ubuntu 24.04 LTS VPS us
 - Target OS: Ubuntu 24.04 LTS (x86_64)
 - Host: Linode shared CPU
 - Public IP: see `SECRETS.md` (local only, gitignored)
-- SSH alias: `ssh freeBox` (defined in `~/.ssh/config`, logs in as a sudo user — exact username in `SECRETS.md`)
+- SSH alias: `ssh freebox` (defined in `~/.ssh/config`, logs in as a sudo user — exact username in `SECRETS.md`)
 - Primary access paths: SSH, Tailscale (active — Tailscale IP in `SECRETS.md`)
 - Obsidian Sync remains the main vault sync layer (sync strategy for vaults on freeBox is undecided — see `10_docs/obsidian-sync.md`)
 

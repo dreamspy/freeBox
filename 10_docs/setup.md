@@ -8,7 +8,7 @@ Goal: a reliable server that runs Claude Code in `tmux`, reachable from Mac and 
 
 ## 0. Assumptions
 
-- Server alias `freeBox` resolves via `~/.ssh/config`
+- Server alias `freebox` resolves via `~/.ssh/config`
 - Normal user is a sudo user (exact username in `SECRETS.md`, kept out of the public repo)
 - You are SSH-ing in from a machine where key auth already works
 
@@ -17,14 +17,14 @@ Goal: a reliable server that runs Claude Code in `tmux`, reachable from Mac and 
 ## 1. First connect and reboot
 
 ```bash
-ssh freeBox
+ssh freebox
 sudo reboot
 ```
 
 Reconnect:
 
 ```bash
-ssh freeBox
+ssh freebox
 ```
 
 ---
@@ -239,7 +239,7 @@ sudo systemctl status ssh   # SSH active
 sudo ufw status verbose     # firewall on, OpenSSH allowed
 ```
 
-And from another machine: `ssh freeBox` still works, and `ssh <your-user>@<tailscale-ip>` works.
+And from another machine: `ssh freebox` still works, and `ssh <your-user>@<tailscale-ip>` works.
 
 ---
 
@@ -262,7 +262,7 @@ And from another machine: `ssh freeBox` still works, and `ssh <your-user>@<tails
 ## 15. Day-to-day cheat sheet
 
 ```bash
-ssh freeBox                       # connect
+ssh freebox                       # connect
 tmux attach -t claude             # reattach
 # work in Claude
 # Ctrl-b d to detach

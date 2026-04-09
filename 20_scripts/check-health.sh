@@ -40,7 +40,7 @@ if command -v ufw >/dev/null 2>&1; then
   if sudo -n ufw status verbose 2>/dev/null; then
     :
   else
-    echo "ufw: needs sudo (run with: sudo $0, or 'ssh -t freeBox sudo ufw status verbose')"
+    echo "ufw: needs sudo (run with: sudo $0, or 'ssh -t freebox sudo ufw status verbose')"
   fi
 fi
 

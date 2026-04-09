@@ -18,11 +18,14 @@ freeBox/
 ├── TODO.md                ← persistent server-setup checklist
 ├── .gitignore
 ├── 10_docs/
-│   ├── setup.md           ← end-to-end runbook for the server
-│   └── obsidian-sync.md   ← comparison of vault-sync options (undecided)
+│   ├── setup.md             ← end-to-end runbook for the server
+│   ├── obsidian-sync.md     ← comparison of vault-sync options (decided 2026-04-08)
+│   ├── mac-workstation.md   ← runbook for the Mac always-on workstation experiment
+│   └── linode-vs-mac-mini.md
 ├── 20_scripts/
-│   ├── bootstrap.sh       ← idempotent first-time provisioning
-│   └── check-health.sh    ← quick health snapshot
+│   ├── bootstrap.sh             ← idempotent first-time provisioning of freeBox
+│   ├── check-health.sh          ← quick health snapshot
+│   └── mac-workstation-up.sh    ← bring Mac sessions and Obsidian windows back up
 └── 00_inbox/              ← local-only scratch area (gitignored)
     └── files from chatGPT/  ← original ChatGPT proposals, kept as reference
 ```
@@ -33,7 +36,7 @@ Numbered prefixes sort folders in reading order. The unprefixed root files (`REA
 
 ## Quick start
 
-1. `ssh freeBox`
+1. `ssh freebox`
 2. Copy `20_scripts/bootstrap.sh` to the server and run it with `sudo`
 3. `sudo tailscale up` and complete browser auth
 4. `tmux new -s claude && claude`
