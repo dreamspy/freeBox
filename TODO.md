@@ -2,6 +2,10 @@
 
 Working checklist for getting freeBox into a fully usable state. Detailed steps live in [`10_docs/setup.md`](10_docs/setup.md).
 
+## Investigate
+
+- [ ] Is it safe to keep the freeBox git repo inside `~/Vaults/freeBox/` (a Syncthing-synced folder)? Uncommitted/unpushed changes will propagate to other machines via Syncthing before being committed — risk of conflicts, `.git/` corruption, or surprising state on other devices. Decide whether to move the repo outside the vault or add `.stignore` rules for `.git/`
+
 ## freeBox — open items
 
 - [x] Test what happens when adding a new vault, and document the full process (create folder, set up Obsidian Sync manually, Syncthing pickup, Claude session, SilverBullet access, etc.)
