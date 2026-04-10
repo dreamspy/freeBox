@@ -90,7 +90,23 @@ Sign in via the menu bar icon to the same tailnet as freeBox, atom, and freePhon
 
 (The Mac App Store version of Tailscale is also fine if you prefer sandboxed installs — pick one.)
 
-### 1.5 Verify Phase 1
+### 1.5 Screen Sharing (VNC over Tailscale)
+
+**System Settings → General → Sharing → Screen Sharing → On.**
+
+This lets you get a full GUI session on freeMac from any other device on the tailnet. No port forwarding or public exposure — Tailscale handles the tunnel.
+
+Connect from atom:
+
+```bash
+open vnc://freemac
+```
+
+Or use **Finder → Go → Connect to Server → `vnc://freemac`**.
+
+> Screen Sharing only works while macOS is logged in. If freeMac is stuck at the FileVault screen after a reboot, you must type the password physically — VNC cannot reach the pre-boot unlock screen.
+
+### 1.6 Verify Phase 1
 
 - `pmset -g` shows the values from §1.1
 - freeMac's tailnet IPv4 is reachable from freePhone (`tailscale ping freemac` from another tailnet device, or just SSH/HTTP-test)

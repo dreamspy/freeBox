@@ -1,6 +1,6 @@
 [Unit]
 Description=Watch ~/Vaults/ for new subdirectories and start Claude sessions
-Documentation=file:///home/frimann/freeBox/10_docs/freebox-services.md
+Documentation=file:///home/frimann/Vaults/freeBox/10_docs/freebox-services.md
 
 [Path]
 PathChanged=%h/Vaults

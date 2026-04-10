@@ -3,14 +3,14 @@
 # freebox-vaults-up.sh — bring up one detached tmux session per vault under
 # ~/vaults on the freeBox server, each running:
 #
-#   claude remote-control --name "freebox-<sanitized-vault-name>"
+#   claude remote-control --name "fb-<sanitized-vault-name>-<MMdd-HHmm>"
 #
 # Idempotent. Safe to re-run: existing sessions are left alone.
 #
 # Run on freeBox (not on the Mac):
 #   ssh freebox 'bash ~/freebox-vaults-up.sh'
 # or after copying into the repo on the server:
-#   bash ~/freeBox/20_scripts/freebox-vaults-up.sh
+#   bash ~/Vaults/freeBox/20_scripts/freebox-vaults-up.sh
 #
 # Environment overrides:
 #   VAULTS_DIR   default: $HOME/Vaults
@@ -127,7 +127,7 @@ for vault_dir in "${vault_dirs[@]}"; do
   fi
 
   session="vault-${safe_name}"
-  remote_name="freebox-${safe_name}"
+  remote_name="fb-${safe_name}-$(date +%m%d-%H%M)"
 
   if tmux has-session -t "$session" 2>/dev/null; then
     log "session $session already exists, skipping"
