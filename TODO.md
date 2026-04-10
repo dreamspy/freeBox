@@ -4,7 +4,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 ## Investigate
 
-- [ ] Is it safe to keep the freeBox git repo inside `~/Vaults/freeBox/` (a Syncthing-synced folder)? Uncommitted/unpushed changes will propagate to other machines via Syncthing before being committed — risk of conflicts, `.git/` corruption, or surprising state on other devices. Decide whether to move the repo outside the vault or add `.stignore` rules for `.git/`
+- [ ] Move the freeBox git repo out of `~/Vaults/` (Syncthing-synced) to a non-synced location (e.g. `~/Projects/freeBox`) on all machines (atom, freeMac, freeBox). Syncthing ignoring it via `.stignore` doesn't work well because `.stignore` is per-machine. Update all script paths, systemd units, LaunchAgent plist, and docs after the move.
 
 ## freeBox — open items
 
