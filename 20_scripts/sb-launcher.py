@@ -27,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 VAULTS_DIR = "/home/frimann/Vaults"
 SB_SWITCH = "/home/frimann/bin/sb-switch"
-VAULTS_UP = "/home/frimann/Vaults/freeBox/20_scripts/freebox-vaults-up.sh"
+VAULTS_UP = "/home/frimann/Programming/freeBox/20_scripts/freebox-vaults-up.sh"
 SB_URL = "https://freebox.tail3eed93.ts.net/"
 HOST = "127.0.0.1"
 PORT = 3001

@@ -72,7 +72,7 @@ Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverb
 - **Install / update on the server:**
   ```bash
   ssh freebox
-  cd ~/Vaults/freeBox && git pull
+  cd ~/Programming/freeBox && git pull
   mkdir -p ~/.config/systemd/user
   cp 20_scripts/freebox-vaults-up.service ~/.config/systemd/user/
   systemctl --user daemon-reload
@@ -85,7 +85,7 @@ Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverb
   systemctl --user daemon-reload
   systemctl --user enable --now freebox-vaults-watch.path
   ```
-- **Manual run:** `bash ~/Vaults/freeBox/20_scripts/freebox-vaults-up.sh`
+- **Manual run:** `bash ~/Programming/freeBox/20_scripts/freebox-vaults-up.sh`
 - **Inspect a session:** `tmux attach -t vault-<sanitized>` (Ctrl-b d to detach without killing).
 
 ## Things deliberately NOT running on freeBox

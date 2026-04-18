@@ -98,7 +98,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [ ] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
 - [x] Clone this repo: `mkdir -p ~/Vaults && cd ~/Vaults && git clone https://github.com/dreamspy/freeBox.git`
 - [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
-- [ ] Run `bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
+- [ ] Run `bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
 - [ ] Pair freePhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the app (distinct from `freebox-<vault>` sessions)
 
 ### Phase 4 — Auto-start after login

@@ -33,7 +33,7 @@ Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync. freeMac is the
 - **Vaults:** all live in `~/Vaults/<vault-name>/`, synced via **Obsidian Sync** (to freePhone and atom) and **Syncthing** (to freeBox and atom)
 - **Sessions:** one tmux session per vault, named `freemac-<sanitized-vault-name>`, each running `claude remote-control --name "freemac-<name>"`
 - **Phone access:** Claude Code Remote Control for the Claude sessions (tunnels through Anthropic, no VPN required); Tailscale on the Mac for everything else (SSH, future web services, Files)
-- **Repo location on the Mac:** `~/Vaults/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `VAULTS_DIR` env var if you keep vaults elsewhere
+- **Repo location on the Mac:** `~/Programming/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `VAULTS_DIR` env var if you keep vaults elsewhere
 - **Helper scripts:** `20_scripts/mac-workstation-up.sh` (Claude tmux + Obsidian), `20_scripts/mac-obsidian-up.sh` (Obsidian-only, lighter option)
 
 > **About FileVault:** macOS does not allow auto-login when FileVault is on. After any actual reboot or power failure, the Mac comes back to the FileVault unlock screen and waits for you to physically type your account password. Once you type it, the user auto-logs in and the LaunchAgent installed in §4 fires and brings everything else back. A small UPS (~$40) eliminates the most common cause of unattended reboots and is the right lever to pull rather than disabling FileVault. See `10_docs/obsidian-sync.md` and the project memory for the broader notes-workflow context.
@@ -196,7 +196,7 @@ The first interactive `claude` run will prompt the browser auth flow — do that
 
 ### 3.2 Clone this repo
 
-The helper script and LaunchAgent assume the repo is at `~/Vaults/freeBox`. If you keep vaults elsewhere, set `VAULTS_DIR` accordingly.
+The helper script and LaunchAgent assume the repo is at `~/Programming/freeBox`. If you keep vaults elsewhere, set `VAULTS_DIR` accordingly.
 
 ```bash
 mkdir -p ~/Vaults
@@ -209,7 +209,7 @@ git clone https://github.com/dreamspy/freeBox.git
 The helper at `20_scripts/mac-workstation-up.sh` is idempotent — it skips sessions that already exist and opens any vault windows that aren't already open. Each session runs `claude remote-control --name "freemac-<sanitized-vault>"` (Unicode transliterated via `iconv`, lowercased, non-alnum collapsed to `_`).
 
 ```bash
-	bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh
+	bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh
 ```
 
 You should see one detached tmux session per vault and Obsidian opening one window per vault.
@@ -268,7 +268,7 @@ cat > ~/Library/LaunchAgents/com.freebox.mac-workstation.plist <<EOF
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>$HOME/Vaults/freeBox/20_scripts/mac-workstation-up.sh</string>
+    <string>$HOME/Programming/freeBox/20_scripts/mac-workstation-up.sh</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -367,8 +367,8 @@ tmux ls                                # which sessions are alive
 tmux attach -t freemac-<name>          # work on a vault's claude session
 # Ctrl-b d                             # detach without killing
 
-bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh   # idempotent: bring missing sessions/windows back
-bash ~/Vaults/freeBox/20_scripts/mac-obsidian-up.sh      # lighter: Obsidian windows only
+bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh   # idempotent: bring missing sessions/windows back
+bash ~/Programming/freeBox/20_scripts/mac-obsidian-up.sh      # lighter: Obsidian windows only
 tail -f ~/Library/Logs/mac-workstation.log               # debug auto-start
 ```
 

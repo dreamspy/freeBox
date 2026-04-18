@@ -6,7 +6,7 @@
 # Safe to call from a LaunchAgent at login.
 #
 # Manual:
-#   bash ~/Vaults/freeBox/20_scripts/mac-obsidian-up.sh
+#   bash ~/Programming/freeBox/20_scripts/mac-obsidian-up.sh
 #
 # Automatic on login:
 #   ~/Library/LaunchAgents/com.freemac.obsidian.plist

@@ -10,7 +10,7 @@
 # Idempotent. Safe to re-run. Safe to call from a LaunchAgent at login.
 #
 # Manual:
-#   bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh
+#   bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh
 #
 # Automatic on login:
 #   ~/Library/LaunchAgents/com.freebox.mac-workstation.plist

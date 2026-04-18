@@ -43,10 +43,10 @@ To pick it up immediately without waiting:
 
 ```bash
 # On freeBox:
-ssh freebox 'bash ~/Vaults/freeBox/20_scripts/freebox-vaults-up.sh'
+ssh freebox 'bash ~/Programming/freeBox/20_scripts/freebox-vaults-up.sh'
 
 # On freeMac:
-ssh freemac 'bash ~/Vaults/freeBox/20_scripts/mac-workstation-up.sh'
+ssh freemac 'bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh'
 ```
 
 The systemd path watcher on freeBox (`freebox-vaults-watch.path`) also triggers automatically when `~/Vaults/` changes.

@@ -10,7 +10,7 @@
 # Run on freeBox (not on the Mac):
 #   ssh freebox 'bash ~/freebox-vaults-up.sh'
 # or after copying into the repo on the server:
-#   bash ~/Vaults/freeBox/20_scripts/freebox-vaults-up.sh
+#   bash ~/Programming/freeBox/20_scripts/freebox-vaults-up.sh
 #
 # Environment overrides:
 #   VAULTS_DIR   default: $HOME/Vaults
