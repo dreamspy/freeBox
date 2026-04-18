@@ -6,9 +6,9 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 > freeMac and freeBox moved to `~/Programming/freeBox` on 2026-04-18. Atom is still at `~/Vaults/freeBox`; Syncthing is paused on all three peers until atom catches up.
 
-- [ ] **On atom:** add a `freeBox` block to `~/Vaults/.stignore` (local-only, not synced), then `mkdir -p ~/Programming && mv ~/Vaults/freeBox ~/Programming/freeBox`.
-- [ ] **On atom:** copy the Claude Code project slug so memory + session history follow the repo: `cp -a ~/.claude/projects/-Users-frimann-Vaults-freeBox ~/.claude/projects/-Users-frimann-Programming-freeBox` (adjust the slug to whatever atom's username/home resolves to).
-- [ ] **On atom:** check `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` — if present, swap `Vaults/freeBox` → `Programming/freeBox` in the plist and `launchctl unload && launchctl load` it. (If absent, nothing to do — the doc template already points at the new path.)
+- [x] **On atom:** add a `freeBox` block to `~/Vaults/.stignore` (local-only, not synced), then `mkdir -p ~/Programming && mv ~/Vaults/freeBox ~/Programming/freeBox`.
+- [x] **On atom:** copy the Claude Code project slug so memory + session history follow the repo: `cp -a ~/.claude/projects/-Users-frimann-Vaults-freeBox ~/.claude/projects/-Users-frimann-Programming-freeBox` (adjust the slug to whatever atom's username/home resolves to). (Destination already existed from a prior session; merged via `rsync -a --ignore-existing` — 3 new session `.jsonl` files added, existing `memory/` preserved, source slug removed.)
+- [x] **On atom:** check `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` — if present, swap `Vaults/freeBox` → `Programming/freeBox` in the plist and `launchctl unload && launchctl load` it. (If absent, nothing to do — the doc template already points at the new path.) (No plist present on atom — nothing to do.)
 - [ ] **All three peers:** unpause Syncthing, then watch each peer's Syncthing UI for ~10 minutes to confirm no cross-peer deletion of `freeBox/`.
 - [ ] **Optional cleanup:** delete leftover `.sync-conflict-*.md` files on freeBox (`~/Programming/freeBox/TODO.sync-conflict-*.md`, `~/Programming/freeBox/10_docs/mac-workstation.sync-conflict-*.md`) — historical artifacts from before the move.
 
