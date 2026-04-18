@@ -5,6 +5,7 @@ Documentation=file:///home/frimann/Programming/freeBox/10_docs/freebox-services.
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/Programming/freeBox/20_scripts/freebox-vaults-up.sh
 StandardOutput=journal
 StandardError=journal
