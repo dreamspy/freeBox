@@ -135,8 +135,11 @@ for vault_dir in "${vault_dirs[@]}"; do
   fi
 
   log "starting tmux session $session in $vault_dir (remote: $remote_name)"
+  # Wrap claude in a respawn loop: if it exits (registration race at boot,
+  # network blip, crash), the loop brings it back. The tmux session then
+  # outlives any single claude process.
   tmux new-session -d -s "$session" -c "$vault_dir" \
-    "claude remote-control --spawn=same-dir --name \"$remote_name\""
+    "while true; do claude remote-control --spawn=same-dir --name \"$remote_name\"; sleep 5; done"
   new_sessions=$((new_sessions + 1))
 done
 
