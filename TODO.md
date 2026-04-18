@@ -140,6 +140,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 ## Later / nice to have
 
+- [ ] **Fallback for Claude Remote naming issues:** Set up Blink Shell (iOS) + Mosh as an alternative path to tmux sessions on freeBox/freeMac. Steps: install `mosh` on freeBox (`sudo apt install mosh`), install Blink Shell on freePhone, connect via `mosh freebox` over Tailscale, attach to tmux (Blink has native swipe gestures for tmux — no `ctrl+b` needed)
 - [ ] Decide whether to enable Tailscale SSH (`sudo tailscale up --ssh`) — eliminates manual SSH key management for the private path
 - [ ] Disable Tailscale key expiry on freeBox in the [admin console](https://login.tailscale.com/admin/machines) so it doesn't drop off the tailnet after 180 days
 
