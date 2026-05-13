@@ -31,7 +31,7 @@ Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync. freeMac is the
 - **FileVault:** **ON** — accepted tradeoff is one manual password entry after every actual reboot. Everything else (sessions, Obsidian, Tailscale) auto-starts after the FileVault unlock and the auto-login that follows it
 - **Lid:** start with the lid open on a desk; transition to lid-closed later with Amphetamine when needed (covered in §1.2)
 - **Vaults:** all live in `~/Vaults/<vault-name>/`, synced via **Obsidian Sync** (to freePhone and atom) and **Syncthing** (to freeBox and atom)
-- **Sessions:** one tmux session per vault, named `freemac-<sanitized-vault-name>`, each running `claude remote-control --name "freemac-<name>"`
+- **Sessions:** one tmux session per vault, named `vault-<sanitized-vault-name>`, each running `claude remote-control --name "fm-<name>"`
 - **Phone access:** Claude Code Remote Control for the Claude sessions (tunnels through Anthropic, no VPN required); Tailscale on the Mac for everything else (SSH, future web services, Files)
 - **Repo location on the Mac:** `~/Programming/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `VAULTS_DIR` env var if you keep vaults elsewhere
 - **Helper scripts:** `20_scripts/mac-workstation-up.sh` (Claude tmux + Obsidian), `20_scripts/mac-obsidian-up.sh` (Obsidian-only, lighter option)
@@ -181,7 +181,7 @@ brew services start syncthing
 
 ## 3. Claude Code with per-vault remote-control sessions
 
-**Goal:** one always-on `claude remote-control` session per vault, named `freemac-<vault>` (matching the freeBox naming convention of `freebox-<vault>`), plus the helper script that creates them all in one shot.
+**Goal:** one always-on `claude remote-control` session per vault, named `fm-<vault>` (matching the freeBox naming convention of `freebox-<vault>`), plus the helper script that creates them all in one shot.
 
 ### 3.1 Install the tools
 
@@ -206,7 +206,7 @@ git clone https://github.com/dreamspy/freeBox.git
 
 ### 3.3 Run the helper script
 
-The helper at `20_scripts/mac-workstation-up.sh` is idempotent — it skips sessions that already exist and opens any vault windows that aren't already open. Each session runs `claude remote-control --name "freemac-<sanitized-vault>"` (Unicode transliterated via `iconv`, lowercased, non-alnum collapsed to `_`).
+The helper at `20_scripts/mac-workstation-up.sh` is idempotent — it skips sessions that already exist and opens any vault windows that aren't already open. Each session runs `claude remote-control --name "fm-<sanitized-vault>"` (Unicode transliterated via `iconv`, lowercased, non-alnum collapsed to `_`).
 
 ```bash
 	bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh
@@ -223,7 +223,7 @@ tmux ls
 Reattach a single session:
 
 ```bash
-tmux attach -t freemac-<name>
+tmux attach -t vault-<name>
 ```
 
 Detach without killing it: `Ctrl-b` then `d`.
@@ -232,16 +232,16 @@ There is also a lighter script `20_scripts/mac-obsidian-up.sh` that only opens O
 
 ### 3.4 Connect Claude Code Remote Control from freePhone
 
-Important: Claude Code Remote Control **does not require Tailscale**. It tunnels through Anthropic's infrastructure and works over the public internet directly. Sessions show up as `freemac-<vault>` in the Claude Code app (distinct from `freebox-<vault>` sessions on freeBox).
+Important: Claude Code Remote Control **does not require Tailscale**. It tunnels through Anthropic's infrastructure and works over the public internet directly. Sessions show up as `fm-<vault>` in the Claude Code app (distinct from `freebox-<vault>` sessions on freeBox).
 
 Tailscale on freePhone is still useful for *everything else* (SSH from Blink/Termius, hitting any future local web service, Files), but the Remote Control feature itself does not need it.
 
 ### 3.5 Verify Phase 3
 
-- `tmux ls` shows one `freemac-<name>` session per vault
-- Each session has a running `claude remote-control` process (`tmux attach -t freemac-<name>` to spot-check)
+- `tmux ls` shows one `vault-<name>` session per vault
+- Each session has a running `claude remote-control` process (`tmux attach -t vault-<name>` to spot-check) — remote-control name is `fm-<name>`
 - Obsidian has one window open per vault
-- freePhone Claude Code app can attach to at least one session — should show up as `freemac-<vault>`
+- freePhone Claude Code app can attach to at least one session — should show up as `fm-<vault>`
 
 ---
 
@@ -364,7 +364,7 @@ Document any propagation delays observed.
 
 ```bash
 tmux ls                                # which sessions are alive
-tmux attach -t freemac-<name>          # work on a vault's claude session
+tmux attach -t vault-<name>            # work on a vault's claude session
 # Ctrl-b d                             # detach without killing
 
 bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh   # idempotent: bring missing sessions/windows back
@@ -396,7 +396,7 @@ claude --version                                     # confirm Claude still work
 
 **After a power failure the Mac is unreachable** — expected: it's sitting at the FileVault unlock screen waiting for you. Walk to it, type the password, the rest auto-starts. A UPS prevents the common case.
 
-**Claude session eats CPU forever** — `tmux attach -t freemac-<name>`, `Ctrl-c` in the Claude prompt, then exit. Re-run the helper script to bring it back.
+**Claude session eats CPU forever** — `tmux attach -t vault-<name>`, `Ctrl-c` in the Claude prompt, then exit. Re-run the helper script to bring it back.
 
 ---
 
@@ -408,11 +408,11 @@ After working through everything above:
 - [ ] Tailscale is installed, signed in, and freeMac's tailnet IP is reachable from freePhone
 - [ ] `~/Vaults` contains every expected vault, each with a `.obsidian/` folder
 - [ ] Syncthing is running and peered with freeBox (and atom)
-- [ ] `tmux ls` shows one `freemac-<name>` session per vault
+- [ ] `tmux ls` shows one `vault-<name>` session per vault
 - [ ] Each session has a running `claude remote-control` process
 - [ ] Obsidian has one window per vault
 - [ ] `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` exists and `launchctl list | grep mac-workstation` shows it loaded
-- [ ] freePhone Claude Code app pairs with at least one session (showing as `freemac-<vault>`)
+- [ ] freePhone Claude Code app pairs with at least one session (showing as `fm-<vault>`)
 - [ ] After a real `sudo reboot` and FileVault unlock, sessions and Obsidian windows come back automatically
 - [ ] Cross-device sync tests (§6) pass
 

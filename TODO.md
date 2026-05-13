@@ -2,6 +2,10 @@
 
 Working checklist for getting freeBox into a fully usable state. Detailed steps live in [`10_docs/setup.md`](10_docs/setup.md).
 
+## Next up
+
+- [ ] **freeMac reboot + test:** `sudo reboot` → type FileVault password → confirm within ~10 seconds that all 8 `vault-<name>` tmux sessions return and Obsidian reopens all 8 vaults. Any stragglers should be revived within ~60s by the `com.freebox.mac-tmux-ensure` watchdog — tail `~/Library/Logs/mac-tmux-ensure.log` to confirm. If a Claude session hangs at auth, run `claude` once interactively and repeat. (Also ticks the Phase 4 "Real reboot test" item below.)
+
 ## Repo migration — atom pending
 
 > freeMac and freeBox moved to `~/Programming/freeBox` on 2026-04-18. Atom is still at `~/Vaults/freeBox`; Syncthing is paused on all three peers until atom catches up.
@@ -9,7 +13,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] **On atom:** add a `freeBox` block to `~/Vaults/.stignore` (local-only, not synced), then `mkdir -p ~/Programming && mv ~/Vaults/freeBox ~/Programming/freeBox`.
 - [x] **On atom:** copy the Claude Code project slug so memory + session history follow the repo: `cp -a ~/.claude/projects/-Users-frimann-Vaults-freeBox ~/.claude/projects/-Users-frimann-Programming-freeBox` (adjust the slug to whatever atom's username/home resolves to). (Destination already existed from a prior session; merged via `rsync -a --ignore-existing` — 3 new session `.jsonl` files added, existing `memory/` preserved, source slug removed.)
 - [x] **On atom:** check `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` — if present, swap `Vaults/freeBox` → `Programming/freeBox` in the plist and `launchctl unload && launchctl load` it. (If absent, nothing to do — the doc template already points at the new path.) (No plist present on atom — nothing to do.)
-- [ ] **All three peers:** unpause Syncthing, then watch each peer's Syncthing UI for ~10 minutes to confirm no cross-peer deletion of `freeBox/`.
+- [x] **All three peers:** unpause Syncthing, then watch each peer's Syncthing UI for ~10 minutes to confirm no cross-peer deletion of `freeBox/`.
 - [ ] **Optional cleanup:** delete leftover `.sync-conflict-*.md` files on freeBox (`~/Programming/freeBox/TODO.sync-conflict-*.md`, `~/Programming/freeBox/10_docs/mac-workstation.sync-conflict-*.md`) — historical artifacts from before the move.
 
 ## freeBox — open items
@@ -53,7 +57,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 >
 > **Claude remote-control naming convention** (consistent across all machines):
 > - freeBox sessions: `freebox-<vault-name>` (via `freebox-vaults-up.sh`)
-> - freeMac sessions: `freemac-<vault-name>` (via `mac-workstation-up.sh`)
+> - freeMac sessions: `fm-<vault-name>` (via `mac-workstation-up.sh`)
 >
 > **Adding a new vault:** Obsidian Sync has no "sync all" — each new remote vault must be manually pulled on freeMac via the Obsidian GUI (vault picker → "Show vaults stored in Obsidian Sync" → set path to `~/Vaults/<name>`). This is the one unavoidable manual step.
 
@@ -61,9 +65,9 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 - [x] Back up anything needed from the current install (if any)
 - [x] Factory reset the M1 MacBook Pro (Erase All Content and Settings, or Recovery Mode reinstall)
-- [ ] Install macOS 26 (clean install)
+- [x] Install macOS 26 (clean install)
 - [x] Complete initial macOS setup (account, language, etc.)
-- [ ] Enable FileVault (accept tradeoff: one manual password entry after every reboot)
+- [x] Enable FileVault (accept tradeoff: one manual password entry after every reboot)
 
 ### Phase 1 — Base setup + power management
 
@@ -83,8 +87,8 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] `mkdir -p ~/Vaults`
 - [x] Open Obsidian → Settings → Sync → sign in with your Obsidian account
 - [x] For each remote vault: pull to `~/Vaults/<vault-name>` via "Show vaults stored in Obsidian Sync"
-- [ ] Verify bidirectional sync with the iPhone for one vault (edit on phone → appears on freeMac, and vice versa)
-- [ ] `ls ~/Vaults && du -sh ~/Vaults` — confirm all vaults present and total size sane
+- [x] Verify bidirectional sync with the iPhone for one vault (edit on phone → appears on freeMac, and vice versa)
+- [x] `ls ~/Vaults && du -sh ~/Vaults` — confirm all vaults present and total size sane
 
 ### Phase 2.5 — Syncthing (bridge freeBox ↔ freeMac)
 
@@ -101,20 +105,21 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 - [x] Install Claude Code: `curl -fsSL https://claude.ai/install.sh | bash && claude --version`
 - [x] `brew install tmux`
-- [ ] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
+- [x] First interactive `claude` run to complete the browser auth flow (must happen before the LaunchAgent fires)
 - [x] Clone this repo: `mkdir -p ~/Vaults && cd ~/Vaults && git clone https://github.com/dreamspy/freeBox.git`
-- [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "freemac-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
-- [ ] Run `bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "freemac-<name>"`
-- [ ] Pair freePhone Claude Code Remote Control with at least one session — should show up as `freemac-<vault>` in the app (distinct from `freebox-<vault>` sessions)
+- [x] Update `mac-workstation-up.sh` to use `claude remote-control --name "fm-<sanitized-vault>"` instead of plain `claude` (matching the `freebox-vaults-up.sh` pattern: transliterate Unicode via `iconv`, lowercase, collapse non-alnum to `_`, pre-trust vault dirs in `~/.claude.json`)
+- [x] Run `bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh` — verify `tmux ls` shows one `vault-<name>` session per vault, each running `claude remote-control --name "fm-<name>"`
+- [x] Pair freePhone Claude Code Remote Control with at least one session — should show up as `fm-<vault>` in the app (distinct from `freebox-<vault>` sessions)
 
 ### Phase 4 — Auto-start after login
 
-> Two LaunchAgents: one for Claude tmux sessions + Obsidian (`mac-workstation-up.sh`), one for Obsidian-only if you want a lighter option (`mac-obsidian-up.sh`). Use whichever fits; see runbook §4.
+> Two LaunchAgents: one for Claude tmux sessions + Obsidian (`mac-workstation-up.sh`), one for Obsidian-only if you want a lighter option (`mac-obsidian-up.sh`). Use whichever fits; see runbook §4. A third watchdog LaunchAgent (`com.freebox.mac-tmux-ensure`, `StartInterval=60`) runs `mac-tmux-ensure.sh` every 60s to revive any `vault-*` tmux session that exits after login — added 2026-04-18 after observing sessions dying post-boot.
 
-- [ ] Install the LaunchAgent at `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` (heredoc in runbook §4.1)
-- [ ] `launchctl load` it
-- [ ] Test by killing `tmux` and Obsidian, then unloading + reloading the agent (runbook §4.2)
-- [ ] Real reboot test: `sudo reboot` → type FileVault password → confirm sessions and Obsidian windows come back automatically within ~10 seconds
+- [x] Install the LaunchAgent at `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` (heredoc in runbook §4.1)
+- [x] `launchctl load` it
+- [x] Test by killing `tmux` and Obsidian, then unloading + reloading the agent (runbook §4.2)
+- [x] Install watchdog LaunchAgent `com.freebox.mac-tmux-ensure` (script `20_scripts/mac-tmux-ensure.sh`, logs `~/Library/Logs/mac-tmux-ensure.log`) — 2026-04-18
+- [ ] Real reboot test: `sudo reboot` → type FileVault password → confirm sessions and Obsidian windows come back automatically within ~10 seconds, and that the watchdog revives any session that exits (check `mac-tmux-ensure.log` for restart lines)
 
 ### Phase 5 — Backup ~/Vaults (rsync snapshots)
 

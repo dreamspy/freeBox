@@ -3,7 +3,7 @@
 # mac-workstation-up.sh — bring the freeMac always-on workstation back to its
 # steady state: one detached tmux session per vault running:
 #
-#   claude remote-control --name "freemac-<sanitized-vault-name>"
+#   claude remote-control --name "fm-<sanitized-vault-name>-<MMdd-HHmm>"
 #
 # plus one Obsidian window open per vault.
 #
@@ -130,7 +130,7 @@ for vault_dir in "${vault_dirs[@]}"; do
   fi
 
   session="vault-${safe_name}"
-  remote_name="freemac-${safe_name}"
+  remote_name="fm-${safe_name}-$(date +%m%d-%H%M)"
 
   if tmux has-session -t "$session" 2>/dev/null; then
     log "session $session already exists, skipping"
