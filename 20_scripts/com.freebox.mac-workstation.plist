@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.freebox.mac-workstation — LaunchAgent that runs mac-workstation-up.sh
+  at login. Installs one detached tmux `claude remote-control` session per
+  vault and opens one Obsidian window per vault.
+
+  Install:
+    1. Replace <your-user> with your actual macOS username (see CLAUDE.md
+       for the secret-handling rule on usernames):
+         sed "s/<your-user>/$USER/g" \
+           ~/Programming/freeBox/20_scripts/com.freebox.mac-workstation.plist \
+           > ~/Library/LaunchAgents/com.freebox.mac-workstation.plist
+    2. launchctl load ~/Library/LaunchAgents/com.freebox.mac-workstation.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.freebox.mac-workstation</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/<your-user>/Programming/freeBox/20_scripts/mac-workstation-up.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-workstation.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-workstation.log</string>
+</dict>
+</plist>

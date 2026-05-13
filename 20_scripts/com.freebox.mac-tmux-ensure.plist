@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.freebox.mac-tmux-ensure — LaunchAgent watchdog that runs
+  mac-tmux-ensure.sh every 60 seconds, recreating only `vault-*` tmux
+  sessions that have exited. Safe to run on a tight interval: it does no
+  Obsidian work and does not mutate ~/.claude.json trust state.
+
+  Install:
+    1. Replace <your-user> with your actual macOS username (see CLAUDE.md
+       for the secret-handling rule on usernames):
+         sed "s/<your-user>/$USER/g" \
+           ~/Programming/freeBox/20_scripts/com.freebox.mac-tmux-ensure.plist \
+           > ~/Library/LaunchAgents/com.freebox.mac-tmux-ensure.plist
+    2. launchctl load ~/Library/LaunchAgents/com.freebox.mac-tmux-ensure.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.freebox.mac-tmux-ensure</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/<your-user>/Programming/freeBox/20_scripts/mac-tmux-ensure.sh</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>60</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-tmux-ensure.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-tmux-ensure.log</string>
+</dict>
+</plist>
