@@ -78,7 +78,8 @@ This project sets up and maintains **freeBox**, a Linode Ubuntu 24.04 LTS VPS us
   - `sb-launcher.py` — Python stdlib HTTP server for the vault picker PWA
   - `install-sb-launcher.sh` — one-time installer for the launcher (systemd unit + tailscale serve mount)
   - `redeploy-sb-launcher.sh` — iterative redeploy after editing `sb-launcher.py`
-  - `mac-workstation-up.sh` — Mac side of the workstation experiment
+  - `mac-workstation-up.sh` — Mac side of the workstation experiment (idempotent bring-up)
+  - `mac-workstation-restart.sh` — Mac hard-restart: kills tmux + Obsidian, then re-invokes `mac-workstation-up.sh`
 - `00_inbox/` — local-only scratch area, gitignored; contains `files from chatGPT/` (the original ChatGPT proposal bundle, kept as reference — **do not edit**)
 - `.obsidian/` — local Obsidian vault config, gitignored
 - Numbered prefixes (`10_`, `20_`) sort folders by reading order; new items use gaps so insertions are easy

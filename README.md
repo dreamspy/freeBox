@@ -9,6 +9,24 @@ Setup and maintenance for **freeBox**, a Linode Ubuntu 24.04 VPS used as a remot
 - Claude Remote Control friendly (long-running session on the box)
 - Obsidian Sync remains the planning/notes layer; this repo is the executable layer
 
+## freeMac: restart everything
+
+On **freeMac**, to kill all sessions and Obsidian and bring them back from scratch, run the dedicated restart script:
+
+```bash
+bash ~/Programming/freeBox/20_scripts/mac-workstation-restart.sh
+```
+
+This kills the tmux server, quits Obsidian, then invokes `mac-workstation-up.sh` to rebuild one tmux `claude remote-control` session and one Obsidian window per vault.
+
+If you only want to re-open anything that's *missing* without disturbing running sessions, run the idempotent helper directly:
+
+```bash
+bash ~/Programming/freeBox/20_scripts/mac-workstation-up.sh
+```
+
+Logs: `tail -f ~/Library/Logs/mac-workstation.log`. Full runbook: [`10_docs/mac-workstation.md`](10_docs/mac-workstation.md).
+
 ## Layout
 
 ```
@@ -28,7 +46,8 @@ freeBox/
 │   ├── check-health.sh               ← quick health snapshot
 │   ├── freebox-vaults-up.sh          ← start one Claude remote-control tmux session per vault
 │   ├── freebox-vaults-up.service     ← systemd user unit that runs the above at boot
-│   └── mac-workstation-up.sh         ← bring Mac sessions and Obsidian windows back up
+│   ├── mac-workstation-up.sh         ← bring Mac sessions and Obsidian windows back up (idempotent)
+│   └── mac-workstation-restart.sh    ← hard-restart on Mac: kill tmux + Obsidian, then re-run -up
 └── 00_inbox/              ← local-only scratch area (gitignored)
     └── files from chatGPT/  ← original ChatGPT proposals, kept as reference
 ```
