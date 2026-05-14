@@ -1,0 +1,20 @@
+[Unit]
+Description=Watch ~/.claude/.credentials.json for refresh, trigger freebox-claude-kick.service
+Documentation=https://github.com/dreamspy/freeBox/blob/main/10_docs/freebox-services.md
+
+# PathModified fires on any write that closes the file. Does NOT fire at
+# unit start if the file already exists, so enabling the path unit when
+# claude is healthy is safe.
+#
+# Install:
+#   cp ~/Programming/freeBox/20_scripts/freebox-claude-kick.{path,service} \
+#      ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now freebox-claude-kick.path
+
+[Path]
+PathModified=%h/.claude/.credentials.json
+Unit=freebox-claude-kick.service
+
+[Install]
+WantedBy=default.target

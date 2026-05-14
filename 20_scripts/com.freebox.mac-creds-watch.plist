@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.freebox.mac-creds-watch — LaunchAgent that watches
+  ~/.claude/.credentials.json and runs mac-creds-kick.sh whenever it
+  changes (typically after `claude /login`).
+
+  RunAtLoad is false so re-loading the agent (e.g. at boot) does not
+  needlessly restart claude; only an actual write to the creds file
+  triggers it.
+
+  Install:
+    1. Replace <your-user> with your actual macOS username (see CLAUDE.md
+       for the secret-handling rule on usernames):
+         sed "s/<your-user>/$USER/g" \
+           ~/Programming/freeBox/20_scripts/com.freebox.mac-creds-watch.plist \
+           > ~/Library/LaunchAgents/com.freebox.mac-creds-watch.plist
+    2. launchctl load ~/Library/LaunchAgents/com.freebox.mac-creds-watch.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.freebox.mac-creds-watch</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/<your-user>/Programming/freeBox/20_scripts/mac-creds-kick.sh</string>
+  </array>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/<your-user>/.claude/.credentials.json</string>
+  </array>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-creds-watch.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/<your-user>/Library/Logs/mac-creds-watch.log</string>
+</dict>
+</plist>

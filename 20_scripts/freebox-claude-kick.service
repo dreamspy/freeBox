@@ -1,0 +1,18 @@
+[Unit]
+Description=Kick claude remote-control processes when ~/.claude/.credentials.json changes
+Documentation=https://github.com/dreamspy/freeBox/blob/main/10_docs/freebox-services.md
+
+# Triggered by freebox-claude-kick.path. Sends SIGTERM to all `claude`
+# processes (matching the exact program name via pkill -x, so the bash
+# respawn wrappers and tmux server are untouched). The respawn loops in
+# freebox-vaults-up.sh start fresh claude processes within ~5s, which read
+# the freshly-rewritten credentials file.
+#
+# SuccessExitStatus=1 because pkill returns 1 when no matching processes
+# are found, which is a benign no-op (e.g. service start when no claude
+# is running yet).
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/pkill -x claude
+SuccessExitStatus=0 1
