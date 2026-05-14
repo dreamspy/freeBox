@@ -113,7 +113,13 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 
 ### Phase 4 — Auto-start after login
 
-> Two LaunchAgents: one for Claude tmux sessions + Obsidian (`mac-workstation-up.sh`), one for Obsidian-only if you want a lighter option (`mac-obsidian-up.sh`). Use whichever fits; see runbook §4. A third watchdog LaunchAgent (`com.freebox.mac-tmux-ensure`, `StartInterval=60`) runs `mac-tmux-ensure.sh` every 60s to revive any `vault-*` tmux session that exits after login — added 2026-04-18 after observing sessions dying post-boot.
+> Three LaunchAgents on freeMac, all plists tracked in `20_scripts/com.freebox.*.plist`:
+>
+> 1. `com.freebox.mac-workstation` runs `mac-workstation-up.sh` at login. Brings up one tmux `claude remote-control` session per vault, plus one Obsidian window per vault.
+> 2. `com.freebox.mac-tmux-ensure` runs `mac-tmux-ensure.sh` every 60s (`StartInterval=60`). Recreates missing `vault-*` tmux sessions. Added 2026-04-18 after observing sessions dying post-boot.
+> 3. `com.freebox.mac-creds-watch` (added 2026-05-14): `WatchPaths` on `~/.claude/.credentials.json`. On change, runs `mac-creds-kick.sh`, which kills running `claude` processes, tears down `vault-*` tmux sessions, and re-runs `mac-tmux-ensure.sh`, so the next `/login` immediately refreshes all `claude remote-control` instances.
+>
+> See runbook §4 for install steps. `mac-obsidian-up.sh` is also available as a lighter alternative to #1 (Obsidian-only, no Claude tmux sessions); use it instead of #1 if you don't want Claude tmux sessions on this host.
 
 - [x] Install the LaunchAgent at `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` (heredoc in runbook §4.1)
 - [x] `launchctl load` it
@@ -158,6 +164,16 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 ---
 
 ## Archive (completed)
+
+### Credentials-change watchers (auto-restart on /login)
+
+> Added 2026-05-14. On both hosts a watcher on `~/.claude/.credentials.json` kicks running `claude remote-control` processes when the file changes (typically after `claude /login`), so the respawn loop or watchdog picks up the fresh token within seconds instead of carrying the stale in-memory token until next reboot. Diagnosed after both freeBox and freeMac instances stopped responding to messages from the Claude app; the running processes had been holding tokens from 2-3 weeks earlier even though `~/.claude/.credentials.json` had been refreshed since. Trigger commits: `956cf4d` (freeBox respawn-name refresh), `de56b97` (watcher units for both hosts), `84e8bc8` (mac-creds-kick race fix).
+
+- [x] freeBox: `20_scripts/freebox-claude-kick.path` + `.service` (systemd user units; `PathModified` on creds file triggers `pkill -x claude`; respawn loop in `freebox-vaults-up.sh` restarts within ~5s)
+- [x] freeBox: `freebox-vaults-up.sh` wrapper re-evaluates `$(date +%m%d-%H%M)` per respawn so each kick produces a fresh `fb-<vault>-<MMdd-HHmm>` timestamp visible in the Claude app (was previously baked once at service start)
+- [x] freeMac: `20_scripts/com.freebox.mac-creds-watch.plist` + `mac-creds-kick.sh` (LaunchAgent `WatchPaths` triggers a kicker that pkills claude, kills all `vault-*` tmux sessions synchronously, then re-runs `mac-tmux-ensure.sh`); the 60s `com.freebox.mac-tmux-ensure` watchdog catches any registration stragglers
+- [x] LaunchAgent plists tracked in repo at `20_scripts/com.freebox.*.plist` with `<your-user>` placeholders and install instructions in XML comments (per the public-repo secret-handling rule in `CLAUDE.md`)
+- [x] End-to-end verified on both hosts: `cp` round-trip on the creds file triggers the watcher; all 8 vault endpoints re-register with fresh timestamps
 
 ### Move repo out of ~/Vaults/ (Syncthing-synced)
 
