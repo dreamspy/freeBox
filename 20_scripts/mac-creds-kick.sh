@@ -28,9 +28,21 @@ else
   log "no claude processes were running"
 fi
 
-# Give tmux a moment to tear down the now-empty sessions before we
-# recreate them.
-sleep 2
+# Synchronously tear down all vault-* tmux sessions so mac-tmux-ensure
+# can recreate every one. We do this explicitly rather than waiting for
+# tmux sessions to exit naturally after claude dies: that cascade can
+# take a variable amount of time and races mac-tmux-ensure.sh, leaving
+# some sessions still half-alive when the recreate pass runs.
+killed=0
+if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
+  while IFS= read -r session; do
+    [[ -z "$session" ]] && continue
+    if [[ "$session" == vault-* ]]; then
+      tmux kill-session -t "$session" 2>/dev/null && killed=$((killed + 1)) || true
+    fi
+  done < <(tmux ls -F '#{session_name}' 2>/dev/null)
+fi
+log "killed $killed vault-* tmux session(s)"
 
 if [[ -x "$ENSURE_SCRIPT" ]]; then
   log "invoking $ENSURE_SCRIPT"
