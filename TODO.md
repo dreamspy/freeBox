@@ -14,7 +14,7 @@ Working checklist for getting freeBox into a fully usable state. Detailed steps 
 - [x] **On atom:** copy the Claude Code project slug so memory + session history follow the repo: `cp -a ~/.claude/projects/-Users-frimann-Vaults-freeBox ~/.claude/projects/-Users-frimann-Programming-freeBox` (adjust the slug to whatever atom's username/home resolves to). (Destination already existed from a prior session; merged via `rsync -a --ignore-existing` — 3 new session `.jsonl` files added, existing `memory/` preserved, source slug removed.)
 - [x] **On atom:** check `~/Library/LaunchAgents/com.freebox.mac-workstation.plist` — if present, swap `Vaults/freeBox` → `Programming/freeBox` in the plist and `launchctl unload && launchctl load` it. (If absent, nothing to do — the doc template already points at the new path.) (No plist present on atom — nothing to do.)
 - [x] **All three peers:** unpause Syncthing, then watch each peer's Syncthing UI for ~10 minutes to confirm no cross-peer deletion of `freeBox/`.
-- [ ] **Optional cleanup:** delete leftover `.sync-conflict-*.md` files on freeBox (`~/Programming/freeBox/TODO.sync-conflict-*.md`, `~/Programming/freeBox/10_docs/mac-workstation.sync-conflict-*.md`) — historical artifacts from before the move.
+- [x] **Optional cleanup:** delete leftover `.sync-conflict-*.md` files on freeBox (`~/Programming/freeBox/TODO.sync-conflict-*.md`, `~/Programming/freeBox/10_docs/mac-workstation.sync-conflict-*.md`) — historical artifacts from before the move. (Deleted 2026-05-13; content was pre-migration superseded versions.)
 
 ## freeBox — open items
 
