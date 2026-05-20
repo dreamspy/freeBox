@@ -31,7 +31,7 @@ Both Macs run Syncthing (peer mesh with freeBox) + Obsidian Sync. freeMac is the
 - **FileVault:** **ON** — accepted tradeoff is one manual password entry after every actual reboot. Everything else (sessions, Obsidian, Tailscale) auto-starts after the FileVault unlock and the auto-login that follows it
 - **Lid:** start with the lid open on a desk; transition to lid-closed later with Amphetamine when needed (covered in §1.2)
 - **Vaults:** all live in `~/Vaults/<vault-name>/`, synced via **Obsidian Sync** (to freePhone and atom) and **Syncthing** (to freeBox and atom)
-- **Sessions:** one tmux session per vault, named `vault-<sanitized-vault-name>`, each running `claude remote-control --name "fm-<name>"`
+- **Sessions:** one tmux session per vault, named `vault-<sanitized-vault-name>`, each running `claude remote-control --name "fm-<MMdd-HHmm>-<sanitized-vault>"`. Each tmux session pipes claude's stdout/stderr + exit code to `~/Library/Logs/freemac-vaults/<sanitized>.log` so you can see *why* claude died after the 60s watchdog (`mac-tmux-ensure.sh`) recreates it.
 - **Phone access:** Claude Code Remote Control for the Claude sessions (tunnels through Anthropic, no VPN required); Tailscale on the Mac for everything else (SSH, future web services, Files)
 - **Repo location on the Mac:** `~/Programming/freeBox` (clone this repo here so the helper script and the LaunchAgent paths line up). Override with `VAULTS_DIR` env var if you keep vaults elsewhere
 - **Helper scripts:** `20_scripts/mac-workstation-up.sh` (Claude tmux + Obsidian), `20_scripts/mac-obsidian-up.sh` (Obsidian-only, lighter option)

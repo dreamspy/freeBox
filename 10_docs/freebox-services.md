@@ -62,9 +62,10 @@ Full setup, day-to-day usage, and troubleshooting in [`silverbullet.md`](silverb
 - **Auto-start:** [`20_scripts/freebox-vaults-up.service`](../20_scripts/freebox-vaults-up.service) — a systemd **user** unit installed at `~/.config/systemd/user/freebox-vaults-up.service`.
 - **Behavior:** the script scans `~/Vaults/*/`, pre-populates `hasTrustDialogAccepted: true` in `~/.claude.json` for each vault dir (otherwise `claude remote-control` exits immediately on the workspace-trust check), then starts one detached tmux session per vault running:
   ```
-  claude remote-control --name "freebox-<sanitized-vault>"
+  claude remote-control --name "fb-<MMdd-HHmm>-<sanitized-vault>"
   ```
-  where the sanitized name is the vault dir basename, transliterated to ASCII (`Björn` → `Bjorn`) via GNU iconv, lowercased, and with non-alphanumeric runs collapsed to `_`. Session names are `vault-<sanitized>`. Idempotent: re-running picks up new vaults without disturbing existing sessions.
+  where the sanitized name is the vault dir basename, transliterated to ASCII (`Björn` → `Bjorn`) via GNU iconv, lowercased, and with non-alphanumeric runs collapsed to `_`. The timestamp is re-evaluated per respawn so each restart shows up as a fresh entry in the Claude app. Session names are `vault-<sanitized>`. Idempotent: re-running picks up new vaults without disturbing existing sessions.
+- **Per-vault respawn log:** each in-tmux respawn loop appends `start name=… pid=…` and `exit name=… code=…` lines, plus claude's own stdout/stderr, to `~/.local/state/freebox-vaults/<sanitized>.log`. Read these to investigate why a vault is churning. Tail them all with: `tail -F ~/.local/state/freebox-vaults/*.log`.
 - **Linger requirement:** systemd **user** units don't run at boot unless lingering is enabled for the user. One-time:
   ```bash
   sudo loginctl enable-linger frimann
