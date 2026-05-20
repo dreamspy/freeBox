@@ -5,12 +5,18 @@
 #
 # Safe to run on a short LaunchAgent interval (StartInterval=60).
 #
+# Each restarted tmux session pipes claude's stdout/stderr + exit code to a
+# per-vault log under $LOG_DIR so we can investigate respawn churn.
+#
 # Environment overrides:
 #   VAULTS_DIR   default: $HOME/Vaults
+#   LOG_DIR      default: $HOME/Library/Logs/freemac-vaults
 #
 set -euo pipefail
 
 VAULTS_DIR="${VAULTS_DIR:-$HOME/Vaults}"
+LOG_DIR="${LOG_DIR:-$HOME/Library/Logs/freemac-vaults}"
+mkdir -p "$LOG_DIR"
 
 # LaunchAgents do not source shell rc files.
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:$HOME/.claude/bin:$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
@@ -51,10 +57,15 @@ for vault_dir in "$VAULTS_DIR"/*/; do
     continue
   fi
 
-  remote_name="fm-${safe_name}-$(date +%m%d-%H%M)"
-  log "restarting missing session $session in $vault_dir (remote: $remote_name)"
+  remote_name="fm-$(date +%m%d-%H%M)-${safe_name}"
+  vault_log="$LOG_DIR/${safe_name}.log"
+  log "restarting missing session $session in $vault_dir (remote: $remote_name, log: $vault_log)"
+  printf '[%s] watchdog restarting (prior tmux gone) name=%s\n' \
+    "$(date -Iseconds)" "$remote_name" >> "$vault_log"
   tmux new-session -d -s "$session" -c "$vault_dir" \
-    "claude remote-control --spawn=same-dir --name \"$remote_name\""
+    "printf '[%s] start name=%s pid=%s\n' \"\$(date -Iseconds)\" '$remote_name' \"\$\$\" >> '$vault_log'; \
+     claude remote-control --spawn=same-dir --name \"$remote_name\" >> '$vault_log' 2>&1; \
+     printf '[%s] exit name=%s code=%d (tmux ending)\n' \"\$(date -Iseconds)\" '$remote_name' \$? >> '$vault_log'"
   restarted=$((restarted + 1))
 done
 

@@ -3,9 +3,14 @@
 # freebox-vaults-up.sh — bring up one detached tmux session per vault under
 # ~/vaults on the freeBox server, each running:
 #
-#   claude remote-control --name "fb-<sanitized-vault-name>-<MMdd-HHmm>"
+#   claude remote-control --name "fb-<MMdd-HHmm>-<sanitized-vault-name>"
 #
 # Idempotent. Safe to re-run: existing sessions are left alone.
+#
+# Respawn logging: each in-tmux respawn loop appends to a per-vault log file
+# under $LOG_DIR (default ~/.local/state/freebox-vaults/). One line per
+# claude start, one line per exit (with exit code). claude's own stdout/stderr
+# is also captured there so we can tell *why* it died.
 #
 # Run on freeBox (not on the Mac):
 #   ssh freebox 'bash ~/freebox-vaults-up.sh'
@@ -14,10 +19,13 @@
 #
 # Environment overrides:
 #   VAULTS_DIR   default: $HOME/Vaults
+#   LOG_DIR      default: $HOME/.local/state/freebox-vaults
 #
 set -euo pipefail
 
 VAULTS_DIR="${VAULTS_DIR:-$HOME/Vaults}"
+LOG_DIR="${LOG_DIR:-$HOME/.local/state/freebox-vaults}"
+mkdir -p "$LOG_DIR"
 
 # Non-interactive ssh and systemd units do not source ~/.profile or ~/.bashrc,
 # so $HOME/.local/bin (where the Claude installer puts the `claude` symlink) is
@@ -127,22 +135,35 @@ for vault_dir in "${vault_dirs[@]}"; do
   fi
 
   session="vault-${safe_name}"
-  remote_name="fb-${safe_name}-$(date +%m%d-%H%M)"
+  remote_name="fb-$(date +%m%d-%H%M)-${safe_name}"
+  vault_log="$LOG_DIR/${safe_name}.log"
 
   if tmux has-session -t "$session" 2>/dev/null; then
     log "session $session already exists, skipping"
     continue
   fi
 
-  log "starting tmux session $session in $vault_dir (remote: $remote_name)"
+  log "starting tmux session $session in $vault_dir (remote: $remote_name, log: $vault_log)"
   # Wrap claude in a respawn loop: if it exits (registration race at boot,
   # network blip, crash, creds-watcher kick), the loop brings it back. The
   # tmux session then outlives any single claude process. The $(date ...)
   # is escaped so it re-evaluates per iteration: each respawn picks up a
   # fresh timestamp in the registered name, visible in the Claude app as a
   # signal that a restart happened.
+  #
+  # Every respawn writes to "$vault_log": one line on start, one line on
+  # exit with the exit code, plus claude's own stdout/stderr in between.
+  # This is what we use to investigate "why is this vault respawning?"
   tmux new-session -d -s "$session" -c "$vault_dir" \
-    "while true; do claude remote-control --spawn=same-dir --name \"fb-${safe_name}-\$(date +%m%d-%H%M)\"; sleep 5; done"
+    "while true; do \
+       ts=\$(date +%m%d-%H%M); \
+       name=\"fb-\$ts-${safe_name}\"; \
+       printf '[%s] start name=%s pid=%s\n' \"\$(date -Iseconds)\" \"\$name\" \"\$\$\" >> '$vault_log'; \
+       claude remote-control --spawn=same-dir --name \"\$name\" >> '$vault_log' 2>&1; \
+       code=\$?; \
+       printf '[%s] exit name=%s code=%d, respawn in 5s\n' \"\$(date -Iseconds)\" \"\$name\" \"\$code\" >> '$vault_log'; \
+       sleep 5; \
+     done"
   new_sessions=$((new_sessions + 1))
 done
 

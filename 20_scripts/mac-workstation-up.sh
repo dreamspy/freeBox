@@ -3,9 +3,14 @@
 # mac-workstation-up.sh — bring the freeMac always-on workstation back to its
 # steady state: one detached tmux session per vault running:
 #
-#   claude remote-control --name "fm-<sanitized-vault-name>-<MMdd-HHmm>"
+#   claude remote-control --name "fm-<MMdd-HHmm>-<sanitized-vault-name>"
 #
 # plus one Obsidian window open per vault.
+#
+# Each tmux session captures claude's stdout/stderr + exit code to a per-vault
+# log file under $LOG_DIR (default ~/Library/Logs/freemac-vaults/), so when
+# mac-tmux-ensure.sh later recreates a missing session we can look up *why*
+# the previous claude died.
 #
 # Idempotent. Safe to re-run. Safe to call from a LaunchAgent at login.
 #
@@ -18,10 +23,13 @@
 #
 # Environment overrides:
 #   VAULTS_DIR   default: $HOME/Vaults
+#   LOG_DIR      default: $HOME/Library/Logs/freemac-vaults
 #
 set -euo pipefail
 
 VAULTS_DIR="${VAULTS_DIR:-$HOME/Vaults}"
+LOG_DIR="${LOG_DIR:-$HOME/Library/Logs/freemac-vaults}"
+mkdir -p "$LOG_DIR"
 
 # LaunchAgents do not source shell rc files. Build a PATH that contains the
 # usual locations for Homebrew (Apple Silicon and Intel) plus the Claude
@@ -130,16 +138,19 @@ for vault_dir in "${vault_dirs[@]}"; do
   fi
 
   session="vault-${safe_name}"
-  remote_name="fm-${safe_name}-$(date +%m%d-%H%M)"
+  remote_name="fm-$(date +%m%d-%H%M)-${safe_name}"
+  vault_log="$LOG_DIR/${safe_name}.log"
 
   if tmux has-session -t "$session" 2>/dev/null; then
     log "session $session already exists, skipping"
     continue
   fi
 
-  log "starting tmux session $session in $vault_dir (remote: $remote_name)"
+  log "starting tmux session $session in $vault_dir (remote: $remote_name, log: $vault_log)"
   tmux new-session -d -s "$session" -c "$vault_dir" \
-    "claude remote-control --spawn=same-dir --name \"$remote_name\""
+    "printf '[%s] start name=%s pid=%s\n' \"\$(date -Iseconds)\" '$remote_name' \"\$\$\" >> '$vault_log'; \
+     claude remote-control --spawn=same-dir --name \"$remote_name\" >> '$vault_log' 2>&1; \
+     printf '[%s] exit name=%s code=%d (tmux ending)\n' \"\$(date -Iseconds)\" '$remote_name' \$? >> '$vault_log'"
   new_sessions=$((new_sessions + 1))
 done
 
